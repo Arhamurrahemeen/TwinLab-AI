@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Environment — contains credentials, never commit
+backend/.env
+
+# InfluxDB + Mosquitto runtime data
+mosquitto/data/
+mosquitto/log/
+
+# Archives
+*.zip
