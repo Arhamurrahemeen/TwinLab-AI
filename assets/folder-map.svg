@@ -1,0 +1,58 @@
+<svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TwinLab AI stack — sensor to dashboard">
+  <defs>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#1C1B19" opacity="0.04"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="260" fill="#F4EEE2"/>
+  <rect width="960" height="260" fill="url(#dots)"/>
+  <rect x="10" y="10" width="940" height="240" fill="none" stroke="#1C1B19" stroke-width="0.5" opacity="0.10"/>
+
+  <!-- ── ROW 1 ── -->
+
+  <!-- SENSOR LAYER -->
+  <rect x="24"  y="24" width="293" height="96" rx="6" fill="#FFFFFF" stroke="#E0D8CA" stroke-width="1"/>
+  <rect x="24"  y="24" width="5"   height="96" fill="#539091"/>
+  <text x="42"  y="51" font-family="'Courier New',monospace" font-size="10" letter-spacing="2.5" fill="#8A8275">SENSOR LAYER</text>
+  <text x="42"  y="73" font-family="Georgia,serif"           font-size="16" fill="#1C1B19">ESP32 + DHT22 + MPU6050</text>
+  <text x="42"  y="96" font-family="'Courier New',monospace" font-size="12" fill="#6E6A62">temperature · humidity · vibration</text>
+
+  <!-- INGESTION -->
+  <rect x="333" y="24" width="293" height="96" rx="6" fill="#FFFFFF" stroke="#E0D8CA" stroke-width="1"/>
+  <rect x="333" y="24" width="5"   height="96" fill="#539091"/>
+  <text x="351" y="51" font-family="'Courier New',monospace" font-size="10" letter-spacing="2.5" fill="#8A8275">INGESTION</text>
+  <text x="351" y="73" font-family="Georgia,serif"           font-size="16" fill="#1C1B19">MQTT → InfluxDB</text>
+  <text x="351" y="96" font-family="'Courier New',monospace" font-size="12" fill="#6E6A62">Mosquitto · time-series data</text>
+
+  <!-- DEVICE REGISTRY -->
+  <rect x="642" y="24" width="293" height="96" rx="6" fill="#FFFFFF" stroke="#E0D8CA" stroke-width="1"/>
+  <rect x="642" y="24" width="5"   height="96" fill="#539091"/>
+  <text x="660" y="51" font-family="'Courier New',monospace" font-size="10" letter-spacing="2.5" fill="#8A8275">DEVICE REGISTRY</text>
+  <text x="660" y="73" font-family="Georgia,serif"           font-size="16" fill="#1C1B19">MongoDB</text>
+  <text x="660" y="96" font-family="'Courier New',monospace" font-size="12" fill="#6E6A62">devices · users · configs</text>
+
+  <!-- ── ROW 2 ── -->
+
+  <!-- BACKEND -->
+  <rect x="24"  y="140" width="293" height="96" rx="6" fill="#FFFFFF" stroke="#E0D8CA" stroke-width="1"/>
+  <rect x="24"  y="140" width="5"   height="96" fill="#539091"/>
+  <text x="42"  y="167" font-family="'Courier New',monospace" font-size="10" letter-spacing="2.5" fill="#8A8275">BACKEND</text>
+  <text x="42"  y="189" font-family="Georgia,serif"           font-size="16" fill="#1C1B19">FastAPI + WebSocket</text>
+  <text x="42"  y="212" font-family="'Courier New',monospace" font-size="12" fill="#6E6A62">REST API · live push</text>
+
+  <!-- AI ENGINE -->
+  <rect x="333" y="140" width="293" height="96" rx="6" fill="#FFFFFF" stroke="#E0D8CA" stroke-width="1"/>
+  <rect x="333" y="140" width="5"   height="96" fill="#539091"/>
+  <text x="351" y="167" font-family="'Courier New',monospace" font-size="10" letter-spacing="2.5" fill="#8A8275">AI ENGINE</text>
+  <text x="351" y="189" font-family="Georgia,serif"           font-size="16" fill="#1C1B19">Isolation Forest · LSTM</text>
+  <text x="351" y="212" font-family="'Courier New',monospace" font-size="12" fill="#6E6A62">anomaly detection · RUL</text>
+
+  <!-- INTERFACE -->
+  <rect x="642" y="140" width="293" height="96" rx="6" fill="#FFFFFF" stroke="#E0D8CA" stroke-width="1"/>
+  <rect x="642" y="140" width="5"   height="96" fill="#539091"/>
+  <text x="660" y="167" font-family="'Courier New',monospace" font-size="10" letter-spacing="2.5" fill="#8A8275">INTERFACE</text>
+  <text x="660" y="189" font-family="Georgia,serif"           font-size="16" fill="#1C1B19">React + Gemini AI</text>
+  <text x="660" y="212" font-family="'Courier New',monospace" font-size="12" fill="#6E6A62">live charts · Urdu chat</text>
+</svg>

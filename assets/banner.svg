@@ -1,0 +1,46 @@
+<svg viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TwinLab AI — Industrial IoT Digital Twin Platform">
+  <defs>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#1C1B19" opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="300" fill="#F4EEE2"/>
+  <rect width="1200" height="300" fill="url(#grid)"/>
+
+  <!-- editorial double frame -->
+  <rect x="22" y="22" width="1156" height="256" fill="none" stroke="#1C1B19" stroke-width="1.5"/>
+  <rect x="30" y="30" width="1140" height="240" fill="none" stroke="#1C1B19" stroke-width="0.6"/>
+
+  <!-- blueprint crosshair (right side) -->
+  <g transform="translate(1018,150)" stroke="#539091" fill="none" opacity="0.22">
+    <circle r="92" stroke-width="1.2"/>
+    <circle r="58" stroke-width="0.8"/>
+    <circle r="24" stroke-width="0.6"/>
+    <line x1="-120" y1="0" x2="120" y2="0" stroke-width="0.8"/>
+    <line x1="0" y1="-120" x2="0" y2="120" stroke-width="0.8"/>
+    <line x1="-80" y1="-80" x2="80" y2="80" stroke-width="0.4" stroke-dasharray="4,6"/>
+    <line x1="80" y1="-80" x2="-80" y2="80" stroke-width="0.4" stroke-dasharray="4,6"/>
+  </g>
+
+  <!-- signal pulse (left decoration) -->
+  <g transform="translate(880,150)" stroke="#539091" fill="none" opacity="0.12">
+    <polyline points="-40,0 -28,0 -20,-38 -12,38 -4,-20 4,20 12,0 40,0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- top label -->
+  <text x="64" y="82" font-family="'SF Mono', ui-monospace, 'Courier New', monospace"
+        font-size="13" letter-spacing="5" fill="#8A8275">IIOT DIGITAL TWIN · OMNITEX · KARACHI · 2026</text>
+
+  <!-- title -->
+  <text x="60" y="182" font-family="Georgia, 'Times New Roman', serif"
+        font-size="90" font-style="italic" fill="#1C1B19">TwinLab AI</text>
+
+  <!-- accent rule -->
+  <rect x="64" y="202" width="160" height="4" fill="#539091"/>
+
+  <!-- tagline -->
+  <text x="64" y="244" font-family="'SF Mono', ui-monospace, 'Courier New', monospace"
+        font-size="16" letter-spacing="1" fill="#3A372F">Real-time sensor monitoring · Anomaly detection · Urdu-first AI — built for Pakistan</text>
+</svg>
