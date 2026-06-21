@@ -14,7 +14,6 @@
 
 [![Phase](https://img.shields.io/badge/Phase-2%20Complete-539091?style=flat-square)]()
 [![Status](https://img.shields.io/badge/Status-MVP%20Build-orange?style=flat-square)]()
-[![OmniteX](https://img.shields.io/badge/By-OmniteX-111111?style=flat-square)]()
 
 </div>
 
@@ -33,6 +32,12 @@
 ---
 
 ## What TwinLab is
+
+<div align="center">
+
+![TwinLab Pro · TwinLab Edu](./assets/TwinLab_Wordmark_Varient.png)
+
+</div>
 
 Two products, one platform.
 
@@ -157,6 +162,10 @@ uvicorn main:app --reload --port 8000
 [LinkedIn](https://www.linkedin.com/in/muhammad-arham-rajput) &nbsp;·&nbsp;
 [GitHub](https://github.com/Arhamurrahemeen) &nbsp;·&nbsp;
 [Email](mailto:arhamurrahemeen@gmail.com)
+
+<br/>
+
+![OmniteX](./assets/OmniteX_Wordmark_black.png)
 
 <sub>Living document — updated at the end of every phase.</sub>
 
