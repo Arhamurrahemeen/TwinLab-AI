@@ -31,9 +31,16 @@ print(f"[TwinLab Simulator] Publishing as device '{DEVICE_ID}'")
 
 t = 0
 while True:
+    # Inject a fault spike every 60 seconds to give anomaly detection something real to find
+    fault = (t % 60 == 0) and t > 0
+
     # DHT22 — temperature & humidity
     temp     = 24.5 + 3 * math.sin(t * 0.1) + random.uniform(-0.3, 0.3)
     humidity = 55.0 + 5 * math.cos(t * 0.07) + random.uniform(-1, 1)
+    if fault:
+        temp     += random.uniform(8, 12)   # overheating spike
+        humidity += random.uniform(15, 20)  # humidity surge
+        print("[SIM] *** FAULT INJECTED — spike on temperature + humidity ***")
     publish("temperature", temp, "C")
     publish("humidity",    humidity, "%")
 
@@ -41,6 +48,9 @@ while True:
     accel_x = random.uniform(-0.05, 0.05)
     accel_y = random.uniform(-0.05, 0.05)
     accel_z = 1.0 + random.uniform(-0.02, 0.02)
+    if fault:
+        accel_x += random.uniform(0.4, 0.6)  # vibration burst
+        accel_z += random.uniform(0.3, 0.5)
     publish("accel_x", accel_x, "g")
     publish("accel_y", accel_y, "g")
     publish("accel_z", accel_z, "g")

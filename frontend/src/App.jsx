@@ -1,0 +1,67 @@
+import { useState } from 'react'
+import DeviceList from './components/DeviceList'
+import SensorChart from './components/SensorChart'
+import AlertsPanel from './components/AlertsPanel'
+import { useDeviceSocket } from './hooks/useDeviceSocket'
+import './App.css'
+
+export default function App() {
+  const [selectedDevice, setSelectedDevice] = useState(null)
+  const liveMessages = useDeviceSocket(selectedDevice?.device_id ?? null)
+
+  return (
+    <div className="app">
+      <header className="navbar">
+        <div className="navbar-brand">
+          <div className="brand-mark">
+            <span className="bm-a" />
+            <span className="bm-b" />
+          </div>
+          <span className="brand-twin">Twin</span>
+          <span className="brand-lab">Lab</span>
+          <span className="brand-pro">PRO</span>
+        </div>
+        <span className="navbar-sep" />
+        <span className="navbar-sub">Industrial Monitor</span>
+        <div className="navbar-right">
+          <span className="status-dot" />
+          <span className="status-label">Live</span>
+        </div>
+      </header>
+
+      <div className="workspace">
+        <DeviceList
+          selectedId={selectedDevice?.device_id}
+          onSelect={setSelectedDevice}
+        />
+
+        <main className="charts-area">
+          {!selectedDevice ? (
+            <div className="empty-state">
+              <p>Select a device from the panel to view live sensor data.</p>
+            </div>
+          ) : (
+            <>
+              <div className="charts-header">
+                <span className="charts-device-name">{selectedDevice.name}</span>
+                <span className="charts-device-location">{selectedDevice.location}</span>
+              </div>
+              <div className="charts-grid">
+                {(selectedDevice.sensors ?? []).map(sensor => (
+                  <SensorChart
+                    key={sensor}
+                    deviceId={selectedDevice.device_id}
+                    sensor={sensor}
+                    liveMessages={liveMessages}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </main>
+
+        <AlertsPanel device={selectedDevice} />
+      </div>
+    </div>
+  )
+}

@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from db.influx import close_influx
 from db.mongo import close_mongo, connect_mongo
-from routers import devices, readings, ws
+from routers import devices, readings, ws, anomaly
 from routers.ws import manager
 
 logging.basicConfig(
@@ -89,6 +89,7 @@ app.add_middleware(
 
 app.include_router(devices.router, prefix="/devices", tags=["devices"])
 app.include_router(readings.router, prefix="/devices", tags=["readings"])
+app.include_router(anomaly.router, prefix="/devices", tags=["anomaly"])
 app.include_router(ws.router, tags=["websocket"])
 
 

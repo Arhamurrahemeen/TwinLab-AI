@@ -41,36 +41,123 @@ The thesis: SMEs and engineering institutions in Pakistan cannot afford Western 
 
 ---
 
-## 2. Where we are right now — Phase 1
+## 2. Current status — Phase 3 complete, Phase 4 is next
 
-The MVP is being built in **4 phases**. Phase 1 is **complete on paper** and the files are downloaded locally. The immediate next action is to **verify the Phase 1 stack runs end-to-end on the developer machine** before moving to Phase 2.
+| Phase | Goal | Status |
+| ----- | ---- | ------ |
+| **1** | MQTT + InfluxDB + MongoDB up, sensor data landing in time-series DB | ✅ Done |
+| **2** | FastAPI backend: device registry (Mongo), live readings endpoint (Influx), WebSocket push | ✅ Done |
+| **3** | React dashboard: live charts, device list, alerts panel; Isolation Forest anomaly detection | ✅ Done |
+| **4** | LSTM RUL model, Gemini Urdu chat interface, load-shedding mode, polished NIC demo | 🔄 Next |
 
-### Phase 1 scope (this directory)
+The MVP target is a **demoable end-to-end loop**: a simulated ESP32 publishes readings, the dashboard shows them live, an anomaly is flagged, the user asks "kya masla hai?" in Urdu, Gemini explains it. That's the NIC pitch.
 
-The ingestion pipeline: sensor → MQTT broker → ingestion service → InfluxDB.
+---
+
+## 3. Repo structure (current)
 
 ```
-twinlab/
-├── docker-compose.yml        # Mosquitto + InfluxDB + MongoDB
+TwinLab/
+├── backend/                        # FastAPI app (Phase 2+3)
+│   ├── .env                        # Service config (not committed)
+│   ├── config.py                   # pydantic-settings loads .env
+│   ├── main.py                     # App entry point + MQTT-to-WebSocket bridge
+│   ├── db/
+│   │   ├── influx.py               # Lazy InfluxDB client
+│   │   └── mongo.py                # Async Motor client
+│   ├── models/
+│   │   └── device.py               # DeviceCreate, DeviceUpdate, DeviceResponse
+│   └── routers/
+│       ├── devices.py              # CRUD against MongoDB
+│       ├── readings.py             # Flux query against InfluxDB
+│       ├── anomaly.py              # Isolation Forest — GET /devices/{id}/anomalies
+│       └── ws.py                   # WebSocket + ConnectionManager
+├── frontend/                       # Vite + React dashboard (Phase 3)
+│   ├── src/
+│   │   ├── api.js                  # getDevices / getReadings / getAnomalies
+│   │   ├── hooks/
+│   │   │   └── useDeviceSocket.js  # WebSocket hook — live MQTT readings
+│   │   ├── components/
+│   │   │   ├── DeviceList.jsx      # Left panel — registered devices
+│   │   │   ├── SensorChart.jsx     # recharts line chart (history + live)
+│   │   │   └── AlertsPanel.jsx     # Right panel — anomaly flags, polls every 30 s
+│   │   ├── App.jsx                 # Three-panel layout
+│   │   ├── App.css                 # Brand palette + component styles
+│   │   └── index.css               # Global reset
+│   └── vite.config.js              # Dev proxy: /api → :8000, /ws → ws://:8000
+├── assets/                         # Brand assets + logos
+├── phase/
+│   ├── phase-1.md
+│   ├── phase-2.md
+│   └── phase-3.md
 ├── mosquitto/config/mosquitto.conf
-├── ingestion.py              # MQTT subscriber → InfluxDB writer
-├── simulator.py              # Fake DHT22 + MPU6050 publisher (no hardware needed)
-├── test_mqtt.py              # Bare MQTT listener for broker sanity check
-├── requirements.txt
-└── README.md                 # Step-by-step run instructions
+├── docker-compose.yml
+├── ingestion.py
+├── simulator.py
+├── test_mqtt.py
+├── requirements.txt                # All deps (Phase 1–3)
+└── README.md
 ```
 
-### Verification sequence (do not skip — this is what we're doing now)
+---
 
-1. `docker compose up -d` → Mosquitto, InfluxDB, MongoDB all healthy
-2. `pip install -r requirements.txt`
-3. Two terminals: `python test_mqtt.py` (listener) + `python simulator.py` (publisher). Confirm messages flow.
-4. Stop the test listener. Run `python ingestion.py`. Keep simulator running.
-5. Open `http://localhost:8086` (admin / twinlab123) → Data Explorer → bucket `twinlab` → measurement `sensor_reading`. Confirm rows are landing with `device_id`, `sensor`, `unit` tags.
+## 4. How to start everything
 
-If all five steps pass, Phase 1 is verified and we move to Phase 2.
+```powershell
+# 1. Start Docker services (run from D:\TwinLab)
+docker compose up -d
 
-### MQTT topic contract (do not change without updating ingestion.py)
+# 2. Start ingestion service
+.venv\Scripts\python ingestion.py
+
+# 3. Start simulator (separate terminal)
+.venv\Scripts\python simulator.py
+
+# 4. Start FastAPI backend (separate terminal, from backend/)
+cd backend
+..\\.venv\Scripts\uvicorn main:app --reload --port 8000
+
+# 5. Start React dashboard (separate terminal, from frontend/)
+cd frontend
+npm run dev
+# Opens at http://localhost:5173
+```
+
+| Service | URL | Credentials |
+| ------- | --- | ----------- |
+| **Dashboard** | http://localhost:5173 | — |
+| InfluxDB UI | http://localhost:8086 | admin / twinlab123 |
+| API + Swagger | http://localhost:8000/docs | — |
+| MQTT broker | localhost:1883 | anonymous |
+| MongoDB | localhost:27017 | admin / twinlab123 |
+
+---
+
+## 5. Phase 2 — what was built
+
+### API endpoints (all running on `localhost:8000`)
+
+| Method | Path | What it does |
+| ------ | ---- | ------------ |
+| GET | `/health` | Sanity check |
+| POST | `/devices` | Register device in MongoDB |
+| GET | `/devices` | List all devices |
+| GET | `/devices/{device_id}` | Get single device |
+| PATCH | `/devices/{device_id}` | Update name/location/sensors |
+| DELETE | `/devices/{device_id}` | Remove device |
+| GET | `/devices/{device_id}/readings` | Query InfluxDB (`?sensor=temperature&limit=20&range_hours=24`) |
+| WS | `/ws/{device_id}` | Live push — MQTT messages forwarded to connected clients |
+
+### Key design decisions made in Phase 2
+- **Motor** (async MongoDB driver) — not PyMongo, keeps FastAPI non-blocking
+- **pydantic-settings** — `.env` file loaded into a typed `Settings` singleton in `config.py`
+- **MQTT → WebSocket bridge** — background daemon thread runs paho-mqtt, uses `asyncio.run_coroutine_threadsafe()` to push to WebSocket clients on the main loop. No InfluxDB polling for live data.
+- **Flux query input validation** — `device_id` and `sensor` validated against `^[\w\-]+$` before string interpolation
+- **CORS** — `allow_origins=["*"]` for dev, tightens in Phase 4
+
+---
+
+## 6. MQTT topic contract (do not change)
 
 ```
 twinlab/device/{device_id}/sensor/{sensor_name}
@@ -81,69 +168,64 @@ Payload (JSON):
 { "value": 24.6, "unit": "C", "ts": 1734000000000 }
 ```
 
-`ts` is **milliseconds since epoch**. InfluxDB writes use nanoseconds — `ingestion.py` multiplies by 1,000,000 on the way in.
-
-### Service ports
-
-- MQTT broker → `localhost:1883`
-- InfluxDB UI → `localhost:8086`
-- MongoDB → `localhost:27017`
-
-### Default credentials (dev only — rotate before any deployment)
-
-- InfluxDB: `admin / twinlab123`, token `twinlab-super-secret-token`, org `twinlab`, bucket `twinlab`
-- MongoDB: `admin / twinlab123`
+`ts` is milliseconds since epoch. InfluxDB writes use nanoseconds — `ingestion.py` multiplies by 1,000,000.
 
 ---
 
-## 3. The four-phase roadmap
+## 7. Phase 3 — what's next (React dashboard)
 
-| Phase | Goal                                                                                    | Status          |
-| ----- | --------------------------------------------------------------------------------------- | --------------- |
-| **1** | MQTT + InfluxDB + MongoDB up, sensor data landing in time-series DB                     | **Verifying**   |
-| **2** | FastAPI backend: device registry (Mongo), live readings endpoint (Influx), WebSocket push to frontend | Not started     |
-| **3** | React dashboard: live charts, device list, alerts panel; Isolation Forest anomaly detection wired in  | Not started     |
-| **4** | LSTM RUL model, Gemini Urdu chat interface, load-shedding mode, polished demo for NIC pitch           | Not started     |
+Phase 3 scope:
+- React app with live sensor charts (consuming `/devices/{id}/readings` + WebSocket)
+- Device list panel
+- Alerts panel
+- Isolation Forest anomaly detection wired into the backend (new endpoint or flag on readings)
 
-The MVP target is a **demoable end-to-end loop**: a simulated ESP32 publishes readings, the dashboard shows them live, an anomaly is flagged, the user asks "kya masla hai?" in Urdu, Gemini explains it. That's the NIC pitch.
-
----
-
-## 4. Constraints and conventions
-
-- **Python style**: standard library + the two deps in `requirements.txt` for Phase 1. No premature dependencies.
-- **Config**: hard-coded constants at the top of each script for Phase 1. Move to `.env` in Phase 2 when FastAPI lands.
-- **Logging**: bracketed-tag print statements (`[MQTT]`, `[OK]`, `[ERROR]`) — keep this style so logs are scannable in the demo terminal. Switch to proper logging in Phase 2.
-- **Error handling**: log and continue. The ingestion service must never crash on a single bad payload — sensors in the field will send garbage occasionally.
-- **No silent changes to the MQTT topic format** — the ESP32 firmware (Phase 3+) and the FastAPI backend (Phase 2) both depend on it.
+Real ESP32 hardware is still NOT needed — `simulator.py` covers it. Hardware comes in Phase 3+ once the dashboard is worth showing.
 
 ---
 
-## 5. Things Claude Code should NOT do
+## 8. Constraints and conventions
 
-- Do not refactor Phase 1 files into a "production" structure (classes, abstract base loggers, dependency injection). Phase 1 is intentionally flat and readable for the pitch demo.
-- Do not swap InfluxDB for TimescaleDB, Mosquitto for EMQX, or MongoDB for Postgres. These choices are locked for MVP — change requires a conversation, not a commit.
-- Do not add authentication to the MQTT broker yet. Anonymous is intentional for Phase 1 dev. Auth lands in Phase 4 hardening.
-- Do not introduce Kubernetes, Helm, Terraform, or any "real" orchestration. Docker Compose is the deployment target for the entire MVP.
-- Do not write tests yet. Phase 1 is verified by the README's 5-step sequence. Test suite lands in Phase 2 with FastAPI.
+- **Python style**: flat scripts for Phase 1 files. Backend uses package structure but stays simple — no DI containers, no abstract base classes.
+- **Config**: `.env` in `backend/` loaded via pydantic-settings. Never hard-code credentials.
+- **Logging**: Phase 2+ uses Python `logging` module with timestamps. Phase 1 files keep bracketed print style (`[MQTT]`, `[OK]`, `[ERROR]`).
+- **Error handling**: log and continue. Ingestion and backend must never crash on a bad payload.
+- **No silent MQTT topic changes** — firmware (Phase 3+) and backend both depend on the contract above.
 
 ---
 
-## 6. Who's working on this
+## 9. Things Claude Code should NOT do
+
+- Do not refactor Phase 1 flat scripts into classes or add DI. They're intentionally readable for the pitch demo.
+- Do not swap any locked tech (InfluxDB, Mosquitto, MongoDB, Docker Compose) — change requires a conversation, not a commit.
+- Do not add MQTT broker authentication yet. Anonymous is intentional through Phase 3.
+- Do not introduce Kubernetes, Helm, or Terraform. Docker Compose is the MVP deployment target.
+- Do not write a test suite yet. That lands in Phase 2 hardening or Phase 3.
+- Do not commit `backend/.env` — it contains dev credentials.
+
+---
+
+## 10. GitHub
+
+Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
+
+---
+
+## 11. Who's working on this
 
 - **Arham** (CTO / Founder) — backend, GenAI, MERN, this repo
-- **Wahaj** (Head of Product Engineering) — DUET batch topper, joining for Phase 2+
+- **Wahaj** (Head of Product Engineering) — DUET batch topper, joining Phase 2+
 - **Kaif** (Co-founder, non-technical) — branding, BD, pitch
 
 ---
 
-## 7. Useful background docs (outside this repo)
+## 12. Useful background docs (outside this repo)
 
 - OmniteX brand guidelines (cream/ink/teal palette, Calibri)
 - NIC Karachi pitch deck (TwinLab as anchor product)
-- Peer-reviewed validation paper: ESP8266/MPU6050/MQTT/Python study, 96.2% prediction accuracy, <$200 hardware cost — used as market thesis support
+- Peer-reviewed validation paper: ESP8266/MPU6050/MQTT/Python study, 96.2% prediction accuracy, <$200 hardware cost
 - Pitch Your Vision 2026 feedback from Syed Hazkeel (Head of NIC Karachi)
 
 ---
 
-*Last updated: Phase 1 verification stage. Update this file at the end of every phase.*
+*Last updated: End of Phase 3. Next session starts Phase 4 (LSTM RUL, Gemini Urdu chat, load-shedding mode, NIC demo polish).*

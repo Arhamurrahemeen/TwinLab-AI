@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+.claude
 
 # Environment — contains credentials, never commit
 backend/.env
@@ -14,3 +15,5 @@ mosquitto/log/
 
 # Archives
 *.zip
+
+git-commands.md 
