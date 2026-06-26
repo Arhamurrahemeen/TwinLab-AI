@@ -2,12 +2,14 @@ import { useState } from 'react'
 import DeviceList from './components/DeviceList'
 import SensorChart from './components/SensorChart'
 import AlertsPanel from './components/AlertsPanel'
+import RulCard from './components/RulCard'
+import ChatPanel from './components/ChatPanel'
 import { useDeviceSocket } from './hooks/useDeviceSocket'
 import './App.css'
 
 export default function App() {
   const [selectedDevice, setSelectedDevice] = useState(null)
-  const liveMessages = useDeviceSocket(selectedDevice?.device_id ?? null)
+  const { messages: liveMessages, connected } = useDeviceSocket(selectedDevice?.device_id ?? null)
 
   return (
     <div className="app">
@@ -24,10 +26,18 @@ export default function App() {
         <span className="navbar-sep" />
         <span className="navbar-sub">Industrial Monitor</span>
         <div className="navbar-right">
-          <span className="status-dot" />
-          <span className="status-label">Live</span>
+          <span className={`status-dot ${connected ? 'status-dot--live' : 'status-dot--off'}`} />
+          <span className={`status-label ${connected ? '' : 'status-label--off'}`}>
+            {connected ? 'Live' : 'Offline'}
+          </span>
         </div>
       </header>
+
+      {selectedDevice && !connected && (
+        <div className="loadshed-banner">
+          ⚡ Connectivity lost — showing last known readings. Reconnecting…
+        </div>
+      )}
 
       <div className="workspace">
         <DeviceList
@@ -46,6 +56,7 @@ export default function App() {
                 <span className="charts-device-name">{selectedDevice.name}</span>
                 <span className="charts-device-location">{selectedDevice.location}</span>
               </div>
+              <RulCard deviceId={selectedDevice.device_id} />
               <div className="charts-grid">
                 {(selectedDevice.sensors ?? []).map(sensor => (
                   <SensorChart
@@ -62,6 +73,8 @@ export default function App() {
 
         <AlertsPanel device={selectedDevice} />
       </div>
+
+      <ChatPanel device={selectedDevice} />
     </div>
   )
 }

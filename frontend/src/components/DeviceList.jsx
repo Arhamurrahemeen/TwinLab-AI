@@ -1,21 +1,30 @@
 import { useEffect, useState } from 'react'
 import { getDevices } from '../api'
+import RegisterDevice from './RegisterDevice'
 
 export default function DeviceList({ selectedId, onSelect }) {
   const [devices, setDevices] = useState([])
   const [error, setError] = useState(null)
+  const [showRegister, setShowRegister] = useState(false)
 
-  useEffect(() => {
+  const load = () => {
     getDevices()
       .then(setDevices)
       .catch(() => setError('Could not load devices'))
-  }, [])
+  }
+
+  useEffect(() => { load() }, [])
 
   return (
     <aside className="panel device-list">
-      <p className="panel-title">Devices</p>
+      <div className="panel-title-row">
+        <p className="panel-title">Devices</p>
+        <button className="add-btn" onClick={() => setShowRegister(true)} title="Register device">+</button>
+      </div>
+
       {error && <p className="muted">{error}</p>}
       {!error && devices.length === 0 && <p className="muted">No devices registered.</p>}
+
       {devices.map(d => (
         <button
           key={d.device_id}
@@ -31,6 +40,13 @@ export default function DeviceList({ selectedId, onSelect }) {
           )}
         </button>
       ))}
+
+      {showRegister && (
+        <RegisterDevice
+          onCreated={() => { setShowRegister(false); load() }}
+          onClose={() => setShowRegister(false)}
+        />
+      )}
     </aside>
   )
 }

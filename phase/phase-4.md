@@ -112,4 +112,18 @@ google-generativeai
 ---
 
 ## Outcome
-*To be filled in when Phase 4 verification is complete.*
+Phase 4 built. Full MVP delivered.
+
+**Backend additions:**
+- `google-generativeai` installed; `GEMINI_API_KEY` wired into `config.py`
+- `routers/chat.py` — `POST /chat` fetches latest readings from InfluxDB, builds device context, calls `gemini-1.5-flash`; replies in same language as input (Urdu / English)
+- `routers/rul.py` — `GET /devices/{id}/rul` runs linear regression (numpy polyfit) per sensor over last 2h; extrapolates to per-sensor threshold; returns `{sensor, status, hours_remaining, trend}`
+- `main.py` — in-memory `_last_known` dict updated on every MQTT message; `GET /devices/{id}/last-known` serves cached readings for load-shedding fallback
+
+**Frontend additions:**
+- `useDeviceSocket` — now returns `{ messages, connected }`; auto-reconnects every 3 s on drop
+- `App.jsx` — yellow load-shedding banner when `connected === false`; navbar dot goes red
+- `RulCard.jsx` — horizontal strip below charts header; shows per-sensor hours-remaining; warning sensors highlighted amber; hidden when all stable
+- `ChatPanel.jsx` — floating teal FAB bottom-right; slide-up 340px panel; user/AI bubbles; loading dots animation; Urdu input works natively
+- `RegisterDevice.jsx` — modal triggered by `+` in device panel header; posts to `/devices`; list auto-refreshes on success
+- `DeviceList.jsx` — `+` button added to panel title row

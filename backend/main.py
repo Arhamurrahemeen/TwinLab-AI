@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from db.influx import close_influx
 from db.mongo import close_mongo, connect_mongo
-from routers import devices, readings, ws, anomaly
+from routers import devices, readings, ws, anomaly, chat, rul
 from routers.ws import manager
 
 logging.basicConfig(
@@ -22,6 +22,9 @@ logging.basicConfig(
 log = logging.getLogger("twinlab")
 
 _loop: asyncio.AbstractEventLoop = None
+
+# Last-known reading per device+sensor — survives InfluxDB/MQTT gaps
+_last_known: dict = {}  # {device_id: {sensor: {value, unit, ts}}}
 
 
 def _parse_topic(topic: str):
@@ -43,6 +46,12 @@ def _on_mqtt_message(client, userdata, msg):
             "value": float(payload["value"]),
             "unit": payload.get("unit", ""),
             "ts": payload.get("ts", int(time.time() * 1000)),
+        }
+        # Update last-known cache
+        _last_known.setdefault(device_id, {})[sensor_name] = {
+            "value": data["value"],
+            "unit": data["unit"],
+            "ts": data["ts"],
         }
         if _loop:
             asyncio.run_coroutine_threadsafe(manager.broadcast(device_id, data), _loop)
@@ -90,9 +99,16 @@ app.add_middleware(
 app.include_router(devices.router, prefix="/devices", tags=["devices"])
 app.include_router(readings.router, prefix="/devices", tags=["readings"])
 app.include_router(anomaly.router, prefix="/devices", tags=["anomaly"])
+app.include_router(rul.router, prefix="/devices", tags=["rul"])
+app.include_router(chat.router, tags=["chat"])
 app.include_router(ws.router, tags=["websocket"])
 
 
 @app.get("/health", tags=["system"])
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/devices/{device_id}/last-known", tags=["system"])
+async def last_known(device_id: str):
+    return _last_known.get(device_id, {})
