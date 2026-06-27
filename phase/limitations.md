@@ -27,3 +27,22 @@
 - Remove `getAnomalies` from `api.js`
 
 ---
+
+## Phase C — Twilio WhatsApp
+
+### Error 63007 — "Could not find a Channel with the specified From address"
+
+**Status:** ⬜ Open — investigating tomorrow (daily message limit reached 2026-06-27)
+
+**Symptom:** `send_alert` logs `[WHATSAPP ERROR]` with Twilio error 63007. Alert records in Mongo correctly; `whatsapp_sent` stays `False`.
+
+**Root cause (suspected):** `TWILIO_WHATSAPP_FROM` in `backend/.env` may be missing the `whatsapp:` prefix, or the sandbox number is wrong. Correct value: `whatsapp:+14155238886`.
+
+**Fix:** Verify `backend/.env` has:
+```
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+ALERT_WHATSAPP_TO=whatsapp:+92xxxxxxxxx
+```
+Restart uvicorn after any `.env` change. Re-test once the daily 5-message limit resets.
+
+---

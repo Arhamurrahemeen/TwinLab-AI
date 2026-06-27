@@ -9,6 +9,8 @@ import time
 from collections import deque
 from datetime import datetime, timezone
 
+from config import settings
+
 log = logging.getLogger("twinlab.alerts")
 
 # ── Config ───────────────────────────────────────────────────
@@ -63,16 +65,21 @@ def _severity(sensor: str, side: str) -> str:
     return "warning"
 
 
-def _make_alert(device_id, sensor, alert_type, severity, value, unit, detail) -> dict:
+def _make_alert(
+    device_id, sensor, alert_type, severity, value, unit, detail,
+    drop_litres: float = 0.0, window_s: float = 0.0,
+) -> dict:
     ts = int(time.time() * 1000)
     if alert_type == "fuel_theft":
+        mins   = round(window_s / 60, 1)
+        rupees = round(drop_litres * settings.diesel_price_pkr)
         msg_en = (
-            f"CRITICAL: {device_id} — fuel dropped {THEFT_DROP_L}+ L "
-            f"while generator was OFF. Suspected theft."
+            f"⚠️ {device_id} — fuel dropped {drop_litres:.1f}L in {mins} min "
+            f"while generator OFF. Suspected theft. Est. loss ~PKR {rupees:,}."
         )
         msg_ur = (
-            f"KHATRNAK: {device_id} — generator band hone ke bawajood "
-            f"{THEFT_DROP_L}+ litre fuel kam hua. Chori ka shak."
+            f"{device_id} — generator BAND honay ke bawajood {mins} min mein "
+            f"{drop_litres:.1f}L fuel kam hua. Chori ka shak. Taqreeban PKR {rupees:,} nuqsan."
         )
     elif severity == "critical":
         msg_en = f"CRITICAL: {device_id} — {sensor} = {value} {unit} ({detail})."
@@ -91,6 +98,8 @@ def _make_alert(device_id, sensor, alert_type, severity, value, unit, detail) ->
         "detail":        detail,
         "message_en":    msg_en,
         "message_ur":    msg_ur,
+        "drop_litres":   drop_litres,
+        "window_s":      window_s,
         "ts":            ts,
         "whatsapp_sent": False,
         "created_at":    datetime.now(timezone.utc),
@@ -171,6 +180,8 @@ def evaluate(
                         device_id, "fuel_level", "fuel_theft", "critical",
                         value, unit,
                         f"dropped {drop:.1f} L in {THEFT_WINDOW_S // 60} min while generator off",
+                        drop_litres=drop,
+                        window_s=float(THEFT_WINDOW_S),
                     )
 
     return None

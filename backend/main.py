@@ -10,10 +10,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import alerts as alert_engine
+import whatsapp
 from config import settings
 from db.influx import close_influx
 from db.mongo import close_mongo, connect_mongo, get_db
-from routers import devices, readings, ws, chat, rul
+from routers import devices, readings, ws, chat, rul, sim as sim_router
 from routers import alerts as alerts_router
 from routers.ws import manager
 
@@ -67,12 +68,26 @@ def _on_mqtt_message(client, userdata, msg):
 async def _persist_alert(alert: dict) -> None:
     try:
         db = get_db()
-        await db.alerts.insert_one(dict(alert))
+
+        # Resolve device name for WhatsApp body
+        device_doc  = await db.devices.find_one({"device_id": alert["device_id"]}, {"name": 1})
+        device_name = device_doc["name"] if device_doc else alert["device_id"]
+
+        result = await db.alerts.insert_one(dict(alert))
         await manager.broadcast(alert["device_id"], {**alert, "type": "alert"})
         log.info(
             f"[ALERT] {alert['alert_type']} {alert['severity']} — "
             f"{alert['device_id']}/{alert['sensor']} — {alert['detail']}"
         )
+
+        # Send WhatsApp in a thread (Twilio SDK is sync)
+        loop = asyncio.get_running_loop()
+        sent = await loop.run_in_executor(None, whatsapp.send_alert, alert, device_name)
+        if sent:
+            await db.alerts.update_one(
+                {"_id": result.inserted_id},
+                {"$set": {"whatsapp_sent": True}},
+            )
     except Exception as e:
         log.error(f"[ALERT] persist failed: {e}")
 
@@ -119,6 +134,7 @@ app.include_router(devices.router,       prefix="/devices", tags=["devices"])
 app.include_router(readings.router,      prefix="/devices", tags=["readings"])
 app.include_router(alerts_router.router, prefix="/devices", tags=["alerts"])
 app.include_router(rul.router,           prefix="/devices", tags=["rul"])
+app.include_router(sim_router.router,    prefix="/sim",     tags=["sim-control"])
 app.include_router(chat.router,          tags=["chat"])
 app.include_router(ws.router,            tags=["websocket"])
 

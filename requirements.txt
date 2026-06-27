@@ -7,3 +7,4 @@ pydantic-settings
 scikit-learn
 numpy
 groq
+twilio
