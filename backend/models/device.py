@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 
@@ -9,6 +9,9 @@ class DeviceCreate(BaseModel):
     location: str
     sensors: list[str]
     description: Optional[str] = None
+    source: str = "simulator"
+    thresholds: Dict[str, Any] = {}
+    status: str = "active"
 
 
 class DeviceUpdate(BaseModel):
@@ -16,6 +19,9 @@ class DeviceUpdate(BaseModel):
     location: Optional[str] = None
     sensors: Optional[list[str]] = None
     description: Optional[str] = None
+    source: Optional[str] = None
+    thresholds: Optional[Dict[str, Any]] = None
+    status: Optional[str] = None
 
 
 class DeviceResponse(BaseModel):
@@ -24,5 +30,8 @@ class DeviceResponse(BaseModel):
     location: str
     sensors: list[str]
     description: Optional[str] = None
+    source: str = "simulator"
+    thresholds: Dict[str, Any] = {}
+    status: str = "active"
     created_at: datetime
     updated_at: datetime

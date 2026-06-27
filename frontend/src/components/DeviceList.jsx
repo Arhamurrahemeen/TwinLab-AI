@@ -31,8 +31,16 @@ export default function DeviceList({ selectedId, onSelect }) {
           className={`device-card${d.device_id === selectedId ? ' active' : ''}`}
           onClick={() => onSelect(d)}
         >
-          <span className="device-name">{d.name}</span>
+          <div className="device-card-top">
+            <span className="device-name">{d.name}</span>
+            <span className={`source-badge source-badge--${d.source ?? 'simulator'}`}>
+              {d.source === 'hardware' ? 'HW' : 'SIM'}
+            </span>
+          </div>
           <span className="device-location">{d.location}</span>
+          {d.status && d.status !== 'active' && (
+            <span className="status-inactive">inactive</span>
+          )}
           {d.sensors?.length > 0 && (
             <div className="device-sensors">
               {d.sensors.map(s => <span key={s} className="sensor-tag">{s}</span>)}

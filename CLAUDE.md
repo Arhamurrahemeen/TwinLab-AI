@@ -1,207 +1,176 @@
-# CLAUDE.md — TwinLab AI
+# CLAUDE.md — TwinLab
 
-> This file is read automatically by Claude Code at the start of every session in this directory. It is the single source of truth for project context. Keep it tight; link out to deeper docs when they exist.
-
----
-
-## 1. What TwinLab AI is
-
-TwinLab AI is an **Industrial IoT (IIoT) digital twin SaaS platform** being built by **OmniteX** (Pakistan-based startup, founder: Muhammad Arham Rajput). The product is currently in **MVP build phase** and is the anchor of OmniteX's NIC Karachi incubation application.
-
-The thesis: SMEs and engineering institutions in Pakistan cannot afford Western digital-twin platforms (Siemens, GE Predix, AVEVA). TwinLab is a localised, lean, Urdu-aware alternative built on open-source primitives, with a load-shedding-tolerant architecture and a price point that fits the local market.
-
-### Two product verticals
-
-**TwinLab Pro** — SME factory monitoring
-- Real-time sensor monitoring (temperature, humidity, vibration, current)
-- Anomaly detection via **Isolation Forest**
-- Remaining Useful Life (RUL) prediction via **LSTM**
-- Urdu-first conversational UI (Gemini-powered)
-- Load-shedding mode (graceful degradation when power/connectivity drops)
-- Target client: small/mid manufacturers, including HSK Bone Care (warm pilot — Arham's family hospital, orthopedic equipment monitoring)
-
-**TwinLab Edu** — Engineering student kits
-- React Flow canvas for building virtual experiments
-- Experiment templates (DSP, control systems, IIoT labs)
-- Pairs with low-cost ESP32-based hardware kits
-- Target: DUET, NED, and other Pakistani engineering universities
-
-### Tech stack (locked)
-
-| Layer            | Choice                                                   |
-| ---------------- | -------------------------------------------------------- |
-| Hardware         | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/gyro)     |
-| Messaging        | MQTT via **Mosquitto** broker                            |
-| Time-series DB   | **InfluxDB 2.7** (sensor readings)                       |
-| Document DB      | **MongoDB 7.0** (device registry, users, configs)        |
-| Backend          | **FastAPI** (Python)                                     |
-| AI               | Gemini API (chat/coaching), Isolation Forest, LSTM       |
-| Frontend         | **React** + React Flow (for Edu canvas)                  |
-| Deploy           | Docker Compose (dev), TBD for prod                       |
+> Read automatically by Claude Code at the start of every session in this directory.
+> This file holds **durable, always-true** context only. Phase detail lives in `phase/`.
+> Keep this file lean. When something here goes stale, fix it — don't append.
 
 ---
 
-## 2. Current status — Phase 3 complete, Phase 4 is next
+## 1. What TwinLab is
 
-| Phase | Goal | Status |
-| ----- | ---- | ------ |
-| **1** | MQTT + InfluxDB + MongoDB up, sensor data landing in time-series DB | ✅ Done |
-| **2** | FastAPI backend: device registry (Mongo), live readings endpoint (Influx), WebSocket push | ✅ Done |
-| **3** | React dashboard: live charts, device list, alerts panel; Isolation Forest anomaly detection | ✅ Done |
-| **4** | Gemini Urdu chat, rule-based RUL, load-shedding mode, device registration UI | ✅ Done |
+**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is an **IIoT digital twin + predictive maintenance platform** by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently in **MVP rebuild (v2)** ahead of NIC Hyderabad / NIC Karachi.
 
-The MVP target is a **demoable end-to-end loop**: a simulated ESP32 publishes readings, the dashboard shows them live, an anomaly is flagged, the user asks "kya masla hai?" in Urdu, Gemini explains it. That's the NIC pitch.
+**First vertical wedge: generator monitoring** (banks, hospitals, telecom towers, factories, commercial buildings). The platform identity stays broad — generators are the entry point, not the whole product.
 
----
+- **TwinLab Pro** — asset monitoring for SME / asset-heavy operations. Generator-first.
+- **TwinLab Edu** — same engine, university lab layer. Parallel track, not a second vertical.
 
-## 3. Repo structure (current)
+**One-line buyer pitch:** *"We put a sensor on your highest-cost asset and WhatsApp you before it fails or gets stolen — starting with generators."*
 
-```
-TwinLab/
-├── backend/                        # FastAPI app (Phase 2+3)
-│   ├── .env                        # Service config (not committed)
-│   ├── config.py                   # pydantic-settings loads .env
-│   ├── main.py                     # App entry point + MQTT-to-WebSocket bridge
-│   ├── db/
-│   │   ├── influx.py               # Lazy InfluxDB client
-│   │   └── mongo.py                # Async Motor client
-│   ├── models/
-│   │   └── device.py               # DeviceCreate, DeviceUpdate, DeviceResponse
-│   └── routers/
-│       ├── devices.py              # CRUD against MongoDB
-│       ├── readings.py             # Flux query against InfluxDB
-│       ├── anomaly.py              # Isolation Forest — GET /devices/{id}/anomalies
-│       └── ws.py                   # WebSocket + ConnectionManager
-├── frontend/                       # Vite + React dashboard (Phase 3)
-│   ├── src/
-│   │   ├── api.js                  # getDevices / getReadings / getAnomalies
-│   │   ├── hooks/
-│   │   │   └── useDeviceSocket.js  # WebSocket hook — live MQTT readings
-│   │   ├── components/
-│   │   │   ├── DeviceList.jsx      # Left panel — registered devices
-│   │   │   ├── SensorChart.jsx     # recharts line chart (history + live)
-│   │   │   └── AlertsPanel.jsx     # Right panel — anomaly flags, polls every 30 s
-│   │   ├── App.jsx                 # Three-panel layout
-│   │   ├── App.css                 # Brand palette + component styles
-│   │   └── index.css               # Global reset
-│   └── vite.config.js              # Dev proxy: /api → :8000, /ws → ws://:8000
-├── assets/                         # Brand assets + logos
-├── phase/
-│   ├── phase-1.md
-│   ├── phase-2.md
-│   └── phase-3.md
-├── mosquitto/config/mosquitto.conf
-├── docker-compose.yml
-├── ingestion.py
-├── simulator.py
-├── test_mqtt.py
-├── requirements.txt                # All deps (Phase 1–3)
-└── README.md
-```
+**Who buys vs who uses:** the owner is the **buyer, not the user** — he receives **WhatsApp alerts only**. The dashboard is for the maintenance/ops head or owner's son. Design for both separately.
+
+**The real competitor is the spreadsheet and the ledger** — not Siemens / GE Predix / AVEVA. Never frame TwinLab as a cheap Western-platform clone. We **complement** existing workflows; we never ask the owner to change how he works.
 
 ---
 
-## 4. How to start everything
+## 2. Tech stack (locked — change requires a conversation, not a commit)
+
+| Layer | Choice |
+|---|---|
+| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration) |
+| Messaging | MQTT via **Mosquitto** |
+| Time-series DB | **InfluxDB 2.7** (sensor readings) |
+| Document DB | **MongoDB 7.0** (device registry, thresholds, alerts, sim control) |
+| Backend | **FastAPI** (Python) |
+| AI — chat | **Groq** `llama-3.3-70b-versatile` (Urdu / Roman Urdu / English) |
+| Alerts | **Twilio WhatsApp** (sandbox for MVP), bilingual, rupee-anchored |
+| Frontend | **React + Vite** (recharts) |
+| Sim control | Separate **Vite** mini-app, same FastAPI backend |
+| Deploy | Docker Compose (dev) |
+
+**AI policy:** Groq is the only LLM. **Gemini is not used** (rate limits). **Isolation Forest is parked** for the MVP — alerting is threshold + fuel-theft rule. RUL stays **rule-based** (no trained LSTM).
+
+---
+
+## 3. Run everything (Windows, from repo root `D:\TwinLab`)
 
 ```powershell
-# 1. Start Docker services (run from D:\TwinLab)
-docker compose up -d
-
-# 2. Start ingestion service
-.venv\Scripts\python ingestion.py
-
-# 3. Start simulator (separate terminal)
-.venv\Scripts\python simulator.py
-
-# 4. Start FastAPI backend (separate terminal, from backend/)
-cd backend
-..\\.venv\Scripts\uvicorn main:app --reload --port 8000
-
-# 5. Start React dashboard (separate terminal, from frontend/)
-cd frontend
-npm run dev
-# Opens at http://localhost:5173
+docker compose up -d                                   # Mosquitto + InfluxDB + MongoDB
+.venv\Scripts\python ingestion.py                      # MQTT -> InfluxDB
+.venv\Scripts\python simulator.py                      # registry-driven sim publisher
+cd backend && ..\.venv\Scripts\uvicorn main:app --reload --port 8000
+cd frontend && npm run dev                             # dashboard  http://localhost:5173
+cd sim-control && npm run dev                          # sim control mini-app (Phase D+)
 ```
 
-| Service | URL | Credentials |
-| ------- | --- | ----------- |
-| **Dashboard** | http://localhost:5173 | — |
-| InfluxDB UI | http://localhost:8086 | admin / twinlab123 |
+| Service | URL | Creds |
+|---|---|---|
+| Dashboard | http://localhost:5173 | — |
+| Sim control | (Vite assigns, e.g. :5174) | — |
 | API + Swagger | http://localhost:8000/docs | — |
-| MQTT broker | localhost:1883 | anonymous |
+| InfluxDB UI | http://localhost:8086 | admin / twinlab123 |
+| MQTT | localhost:1883 | anonymous |
 | MongoDB | localhost:27017 | admin / twinlab123 |
 
----
-
-## 5. Phase 2 — what was built
-
-### API endpoints (all running on `localhost:8000`)
-
-| Method | Path | What it does |
-| ------ | ---- | ------------ |
-| GET | `/health` | Sanity check |
-| POST | `/devices` | Register device in MongoDB |
-| GET | `/devices` | List all devices |
-| GET | `/devices/{device_id}` | Get single device |
-| PATCH | `/devices/{device_id}` | Update name/location/sensors |
-| DELETE | `/devices/{device_id}` | Remove device |
-| GET | `/devices/{device_id}/readings` | Query InfluxDB (`?sensor=temperature&limit=20&range_hours=24`) |
-| WS | `/ws/{device_id}` | Live push — MQTT messages forwarded to connected clients |
-
-### Key design decisions made in Phase 2
-- **Motor** (async MongoDB driver) — not PyMongo, keeps FastAPI non-blocking
-- **pydantic-settings** — `.env` file loaded into a typed `Settings` singleton in `config.py`
-- **MQTT → WebSocket bridge** — background daemon thread runs paho-mqtt, uses `asyncio.run_coroutine_threadsafe()` to push to WebSocket clients on the main loop. No InfluxDB polling for live data.
-- **Flux query input validation** — `device_id` and `sensor` validated against `^[\w\-]+$` before string interpolation
-- **CORS** — `allow_origins=["*"]` for dev, tightens in Phase 4
+> ESP32 note: `MQTT_HOST` in firmware must be the laptop's **LAN IP**, never `localhost`.
 
 ---
 
-## 6. MQTT topic contract (do not change)
+## 4. MQTT topic contract (DO NOT CHANGE)
 
 ```
 twinlab/device/{device_id}/sensor/{sensor_name}
 ```
 
-Payload (JSON):
-```json
-{ "value": 24.6, "unit": "C", "ts": 1734000000000 }
+Payload (JSON): `{ "value": 24.6, "unit": "C", "ts": 1734000000000 }`
+`ts` is **milliseconds**. InfluxDB writes **nanoseconds** — `ingestion.py` multiplies by 1,000,000.
+
+This contract is the seam that makes the system **source-agnostic**: simulator and real ESP32 are just two publishers. Ingestion (`twinlab/#`) and the backend WS bridge (`twinlab/#`) already accept any `device_id`. Never special-case a device by source in ingestion or the WS path.
+
+---
+
+## 5. Coding conventions (carry these forward)
+
+- **Flat scripts stay flat.** `ingestion.py`, `simulator.py`, `test_mqtt.py` are intentionally readable, no classes, no DI. Do not "refactor" them into OOP.
+- **Backend = package structure, but simple.** No DI containers, no abstract base classes, no premature patterns.
+- **Config via `pydantic-settings`** — typed `Settings` singleton in `backend/config.py`, `.env` in `backend/`. Never hard-code credentials. Never commit `.env`.
+- **Logging split:** backend uses the `logging` module with timestamps; flat scripts use bracketed prints (`[MQTT]`, `[OK]`, `[ERROR]`, `[SIM]`).
+- **Log-and-continue.** Ingestion and backend must never crash on a bad payload.
+- **Async Motor, not PyMongo, in the backend.** The MQTT→WebSocket bridge is a daemon thread using `asyncio.run_coroutine_threadsafe()` — no InfluxDB polling for live data. (The **simulator** is the one exception: it reads Mongo via **pymongo** because it's a sync flat script.)
+- **Validate IDs** against `^[\w\-]+$` before any Flux string interpolation.
+
+---
+
+## 6. Things Claude Code should NOT do
+
+- Don't refactor flat Phase-1 scripts into classes / add DI.
+- Don't swap locked tech (InfluxDB, Mosquitto, MongoDB, FastAPI, Docker Compose).
+- Don't reintroduce **Gemini** or wire **Isolation Forest** into the alert path — both are out for the MVP.
+- Don't add MQTT broker auth yet (anonymous is intentional through the MVP).
+- Don't add Kubernetes / Helm / Terraform.
+- Don't write a test suite yet.
+- Don't rename the GitHub repo (`TwinLab-AI`) — it breaks remotes. Fix the **product name in code/UI strings** to "TwinLab" instead.
+- Don't commit `backend/.env` (dev credentials).
+- Don't change the MQTT topic contract.
+
+---
+
+## 7. Phase workflow protocol (FOLLOW EVERY PHASE)
+
+The authoritative rebuild spec is **`phase/MVP_v2_PLAN.md`**. Read it before expanding any phase.
+
+For each phase, in order:
+
+1. **Before writing any code**, create `phase/phase-N.md` with these sections, minimal text:
+   - **Goal** — 2–3 lines: what this phase makes and why.
+   - **Structure & steps** — files touched/created; ordered, concrete steps.
+   - **Start commands** — exact PowerShell commands to run the full stack for this phase (copy-paste ready, in order).
+   - **Expected outcome** — the demoable/verifiable end state + acceptance checks.
+2. Do the work.
+3. **Only after the goal is met**, append a final section to the same file:
+   - **✅ Actually achieved** — what shipped, what deviated from plan, what was deferred, gotchas hit.
+
+Rules: do **not** start coding before `phase/phase-N.md` exists. Do **not** mark a phase done before "Actually achieved" is written. One file per phase. Keep prose minimal — this doubles as the build log.
+
+Template:
+
+```markdown
+# Phase N — <title>
+
+## Goal
+<2–3 lines.>
+
+## Structure & steps
+<files + ordered steps>
+
+## Start commands
+<exact PowerShell commands, in order, to bring the full stack up for this phase>
+
+## Expected outcome
+<verifiable end state + acceptance checks>
+
+---
+## ✅ Actually achieved   <!-- after the phase is done -->
+<what shipped / deviations / deferrals / gotchas>
 ```
 
-`ts` is milliseconds since epoch. InfluxDB writes use nanoseconds — `ingestion.py` multiplies by 1,000,000.
+---
+
+## 8. MVP v2 roadmap (detail in `phase/MVP_v2_PLAN.md`)
+
+History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5 onward**.
+
+| Phase | File | Scope | Status |
+|---|---|---|---|
+| A | `phase/phase-5.md` | Registry-driven core + device schema (`source`, `thresholds`, `status`); registry-driven simulator | ✅ |
+| B | `phase/phase-6.md` | Generator sensors (`fuel_level`, `load_current`) + threshold alert engine + fuel-theft rule | ⬜ |
+| C | `phase/phase-7.md` | Twilio WhatsApp on the alert path (sandbox), bilingual + rupee-anchored | ⬜ |
+| D | `phase/phase-8.md` | Simulator control mini-app + `sim_control` collection | ⬜ |
+| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors) + brand string fixes | ⬜ |
+
+Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written.
 
 ---
 
-## 7. Phase 3 — what's next (React dashboard)
+## 9. Team (no equity discussion in repo files)
 
-Phase 3 scope:
-- React app with live sensor charts (consuming `/devices/{id}/readings` + WebSocket)
-- Device list panel
-- Alerts panel
-- Isolation Forest anomaly detection wired into the backend (new endpoint or flag on readings)
+- **Muhammad Arham Rajput** — Founder & CEO (Technical). Architecture, MQTT, InfluxDB/MongoDB, ESP32, Groq, this repo.
+- **Wahaj** — Head of Product Engineering. React dashboard, FastAPI, Mongo schema.
+- **Kaif Alam** — Co-founder, Growth & BD. Brand, BD, NIC paperwork, customer discovery.
+- **Muskan Hanif** — Head of Design. Visual identity, dashboard UI, alert templates.
+- **Abaan (Muhammad Abban Khawaja)** — Engineering & Security. Scoped under Arham/Wahaj.
 
-Real ESP32 hardware is still NOT needed — `simulator.py` covers it. Hardware comes in Phase 3+ once the dashboard is worth showing.
-
----
-
-## 8. Constraints and conventions
-
-- **Python style**: flat scripts for Phase 1 files. Backend uses package structure but stays simple — no DI containers, no abstract base classes.
-- **Config**: `.env` in `backend/` loaded via pydantic-settings. Never hard-code credentials.
-- **Logging**: Phase 2+ uses Python `logging` module with timestamps. Phase 1 files keep bracketed print style (`[MQTT]`, `[OK]`, `[ERROR]`).
-- **Error handling**: log and continue. Ingestion and backend must never crash on a bad payload.
-- **No silent MQTT topic changes** — firmware (Phase 3+) and backend both depend on the contract above.
-
----
-
-## 9. Things Claude Code should NOT do
-
-- Do not refactor Phase 1 flat scripts into classes or add DI. They're intentionally readable for the pitch demo.
-- Do not swap any locked tech (InfluxDB, Mosquitto, MongoDB, Docker Compose) — change requires a conversation, not a commit.
-- Do not add MQTT broker authentication yet. Anonymous is intentional through Phase 3.
-- Do not introduce Kubernetes, Helm, or Terraform. Docker Compose is the MVP deployment target.
-- Do not write a test suite yet. That lands in Phase 2 hardening or Phase 3.
-- Do not commit `backend/.env` — it contains dev credentials.
+Equity/vesting is deferred until after the NIC pitch — no equity promises in any repo file.
 
 ---
 
@@ -211,21 +180,4 @@ Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
 
 ---
 
-## 11. Who's working on this
-
-- **Arham** (CTO / Founder) — backend, GenAI, MERN, this repo
-- **Wahaj** (Head of Product Engineering) — DUET batch topper, joining Phase 2+
-- **Kaif** (Co-founder, non-technical) — branding, BD, pitch
-
----
-
-## 12. Useful background docs (outside this repo)
-
-- OmniteX brand guidelines (cream/ink/teal palette, Calibri)
-- NIC Karachi pitch deck (TwinLab as anchor product)
-- Peer-reviewed validation paper: ESP8266/MPU6050/MQTT/Python study, 96.2% prediction accuracy, <$200 hardware cost
-- Pitch Your Vision 2026 feedback from Syed Hazkeel (Head of NIC Karachi)
-
----
-
-*Last updated: End of Phase 4. MVP complete. All four phases shipped.*
+*Last updated: start of MVP v2 rebuild (post-Shahruk strategy). Generator-first wedge, threshold + fuel-theft alerting, WhatsApp-first, Groq-only, Isolation Forest parked.*

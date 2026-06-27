@@ -625,6 +625,42 @@
 .chat-send:hover:not(:disabled) { background: #3D8880; }
 .chat-send:disabled { background: #2E3542; color: #8A96A8; cursor: not-allowed; }
 
+/* ─── Device card top row (name + source badge) ──────────── */
+.device-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.source-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.source-badge--simulator {
+  background: rgba(86, 197, 150, 0.12);
+  color: #56C596;
+  border: 1px solid rgba(86, 197, 150, 0.3);
+}
+
+.source-badge--hardware {
+  background: rgba(74, 155, 142, 0.15);
+  color: #4A9B8E;
+  border: 1px solid rgba(74, 155, 142, 0.35);
+}
+
+.status-inactive {
+  font-size: 10px;
+  color: #E05252;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
 /* ─── Register Device modal ──────────────────────────────── */
 .modal-overlay {
   position: fixed;
@@ -640,9 +676,12 @@
   background: #252B35;
   border: 1px solid #2E3542;
   border-radius: 12px;
-  width: 380px;
+  width: 400px;
+  max-height: 90vh;
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -719,3 +758,45 @@
 }
 .btn-primary:hover:not(:disabled) { background: #3D8880; }
 .btn-primary:disabled { background: #2E3542; color: #8A96A8; cursor: not-allowed; }
+
+/* ─── Modal form scroll (handles long sensor lists) ─────── */
+.modal-form {
+  overflow-y: auto;
+  max-height: calc(90vh - 52px);
+}
+
+/* ─── Threshold rows ─────────────────────────────────────── */
+.threshold-header-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.threshold-col-label {
+  font-size: 10px;
+  color: #6A7888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.threshold-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px;
+  align-items: center;
+  gap: 6px;
+}
+
+.threshold-sensor {
+  font-size: 12px;
+  color: #4A9B8E;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threshold-input {
+  padding: 6px 8px;
+  text-align: center;
+}
