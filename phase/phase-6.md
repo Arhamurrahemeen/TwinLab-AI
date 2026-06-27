@@ -87,3 +87,24 @@ npm run dev
 - [ ] With `load_current > 2 A` (generator running), normal fuel burn does **not** trigger fuel-theft.
 - [ ] `/anomalies` is no longer referenced anywhere in the frontend (`grep -r anomalies frontend/src` → empty).
 - [ ] `GET /devices/{id}/alerts` returns alert documents with `alert_type`, `severity`, `detail`, `message_en`, `message_ur`.
+
+---
+
+## ✅ Actually achieved
+
+**Shipped:**
+- `backend/alerts.py`: in-memory threshold cache (60 s TTL, `cache_loop()` background task), cooldown dict (600 s), fuel-theft buffer (deque per device, 300 s window, 5 L drop threshold, requires `load_current < 2 A`). `evaluate()` is fully synchronous — safe to call from the MQTT daemon thread. Alert dict matches the `alerts` collection schema from MVP_v2_PLAN.md §1; `message_en` + `message_ur` generated at fire time; `whatsapp_sent: False` (Phase C).
+- `backend/routers/alerts.py`: `GET /devices/{id}/alerts?limit=&since=` — Motor query, sorted most-recent first, datetime serialised to ISO string.
+- `backend/main.py`: `_persist_alert()` coroutine writes to `alerts` collection and broadcasts alert over WS. `cache_loop()` started as asyncio task in lifespan. `anomaly.router` unmounted; `alerts_router` mounted at `/devices`.
+- `frontend/src/api.js`: `getAnomalies` removed, `getAlerts` added.
+- `frontend/src/components/AlertsPanel.jsx`: polls `getAlerts` every 30 s. Renders `alert-item--critical` (red) / `alert-item--warning` (amber) variants, `alert-type-tag` badge (`threshold` / `fuel theft`), `detail` line, value + unit, timestamp.
+- `frontend/src/App.css`: `.alert-item--critical`, `.alert-item--warning`, `.alert-top-row`, `.alert-type-tag--threshold`, `.alert-type-tag--fuel_theft`, `.alert-detail`.
+
+**Deviations from plan:** none.
+
+**Deferrals:** none — all Phase B scope shipped.
+
+**Gotchas:**
+- `anomaly.py` still exists on disk (not deleted) as per spec §0. It is unmounted — it will not appear in Swagger or fire on any route.
+- Threshold cache starts empty; first refresh happens at lifespan startup before MQTT connects, so the first readings after startup are evaluated against live thresholds. No startup race.
+- `_persist_alert` does `dict(alert)` before insert to avoid Motor mutating the original dict with `_id`.

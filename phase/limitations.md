@@ -8,7 +8,7 @@
 
 ### Alerts panel shows Isolation Forest anomalies, not threshold alerts
 
-**Status:** Open — fixed in Phase B
+**Status:** ✅ Resolved in Phase B
 
 **Symptom:** After setting thresholds on a device (e.g. temperature min: 5, max: 40), readings well within range (e.g. 27°C) are still flagged as alerts in the Alerts panel.
 

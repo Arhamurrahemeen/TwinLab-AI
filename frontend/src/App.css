@@ -329,10 +329,27 @@
   flex-direction: column;
   gap: 3px;
   background: #1E2128;
-  border: 1px solid rgba(224, 82, 82, 0.2);
-  border-left: 3px solid #E05252;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-left: 3px solid #8A96A8;
   border-radius: 6px;
   padding: 9px 11px;
+}
+
+.alert-item--critical {
+  border-left-color: #E05252;
+  border-color: rgba(224, 82, 82, 0.2);
+}
+
+.alert-item--warning {
+  border-left-color: #F5C842;
+  border-color: rgba(245, 200, 66, 0.2);
+}
+
+.alert-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .alert-sensor {
@@ -340,7 +357,32 @@
   font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
+  color: #E8EDF2;
+}
+
+.alert-item--critical .alert-sensor { color: #E05252; }
+.alert-item--warning  .alert-sensor { color: #F5C842; }
+
+.alert-type-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.alert-type-tag--threshold {
+  background: rgba(138, 150, 168, 0.12);
+  color: #8A96A8;
+  border: 1px solid rgba(138, 150, 168, 0.25);
+}
+
+.alert-type-tag--fuel_theft {
+  background: rgba(224, 82, 82, 0.12);
   color: #E05252;
+  border: 1px solid rgba(224, 82, 82, 0.3);
 }
 
 .alert-value {
@@ -354,6 +396,12 @@
   font-size: 11px;
   font-weight: 400;
   color: #8A96A8;
+}
+
+.alert-detail {
+  font-size: 11px;
+  color: #8A96A8;
+  font-style: italic;
 }
 
 .alert-ts {

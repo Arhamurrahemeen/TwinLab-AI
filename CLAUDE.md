@@ -153,7 +153,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | Phase | File | Scope | Status |
 |---|---|---|---|
 | A | `phase/phase-5.md` | Registry-driven core + device schema (`source`, `thresholds`, `status`); registry-driven simulator | ✅ |
-| B | `phase/phase-6.md` | Generator sensors (`fuel_level`, `load_current`) + threshold alert engine + fuel-theft rule | ⬜ |
+| B | `phase/phase-6.md` | Generator sensors (`fuel_level`, `load_current`) + threshold alert engine + fuel-theft rule | ✅ |
 | C | `phase/phase-7.md` | Twilio WhatsApp on the alert path (sandbox), bilingual + rupee-anchored | ⬜ |
 | D | `phase/phase-8.md` | Simulator control mini-app + `sim_control` collection | ⬜ |
 | E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors) + brand string fixes | ⬜ |

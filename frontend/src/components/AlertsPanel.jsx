@@ -1,57 +1,62 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getAnomalies } from '../api'
+import { getAlerts } from '../api'
 
 export default function AlertsPanel({ device }) {
-  const [anomalies, setAnomalies] = useState([])
-  const [scanning, setScanning] = useState(false)
+  const [alerts, setAlerts]   = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const scan = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!device) return
-    setScanning(true)
+    setLoading(true)
     try {
-      const results = await Promise.all(
-        (device.sensors ?? []).map(s => getAnomalies(device.device_id, s).catch(() => []))
-      )
-      const flagged = results
-        .flat()
-        .filter(r => r.is_anomaly)
-        .sort((a, b) => new Date(b.ts) - new Date(a.ts))
-      setAnomalies(flagged)
+      const data = await getAlerts(device.device_id)
+      setAlerts(data)
+    } catch {
+      // keep existing list on transient error
     } finally {
-      setScanning(false)
+      setLoading(false)
     }
   }, [device])
 
   useEffect(() => {
-    setAnomalies([])
-    scan()
-    const id = setInterval(scan, 30_000)
+    setAlerts([])
+    load()
+    const id = setInterval(load, 30_000)
     return () => clearInterval(id)
-  }, [scan])
+  }, [load])
 
   return (
     <aside className="panel alerts-panel">
       <div className="panel-title-row">
         <p className="panel-title">Alerts</p>
-        {anomalies.length > 0 && (
-          <span className="alert-badge">{anomalies.length}</span>
+        {alerts.length > 0 && (
+          <span className="alert-badge">{alerts.length}</span>
         )}
       </div>
 
       {!device && <p className="muted">Select a device.</p>}
 
-      {device && scanning && anomalies.length === 0 && (
-        <p className="muted">Scanning…</p>
+      {device && loading && alerts.length === 0 && (
+        <p className="muted">Loading…</p>
       )}
 
-      {device && !scanning && anomalies.length === 0 && (
-        <p className="muted ok-text">No anomalies detected.</p>
+      {device && !loading && alerts.length === 0 && (
+        <p className="muted ok-text">No alerts.</p>
       )}
 
-      {anomalies.map((a, i) => (
-        <div key={i} className="alert-item">
-          <span className="alert-sensor">{a.sensor.replace('_', ' ')}</span>
-          <span className="alert-value">{a.value.toFixed(4)} <span className="alert-unit">{a.unit}</span></span>
+      {alerts.map((a, i) => (
+        <div key={i} className={`alert-item alert-item--${a.severity ?? 'warning'}`}>
+          <div className="alert-top-row">
+            <span className="alert-sensor">{(a.sensor ?? '').replace(/_/g, ' ')}</span>
+            <span className={`alert-type-tag alert-type-tag--${a.alert_type}`}>
+              {a.alert_type === 'fuel_theft' ? 'fuel theft' : 'threshold'}
+            </span>
+          </div>
+          <span className="alert-value">
+            {typeof a.value === 'number' ? a.value.toFixed(2) : a.value}
+            {' '}<span className="alert-unit">{a.unit}</span>
+          </span>
+          {a.detail && <span className="alert-detail">{a.detail}</span>}
           <span className="alert-ts">{new Date(a.ts).toLocaleTimeString()}</span>
         </div>
       ))}

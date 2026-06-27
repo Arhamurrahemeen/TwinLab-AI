@@ -9,10 +9,12 @@ import paho.mqtt.client as mqtt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import alerts as alert_engine
 from config import settings
 from db.influx import close_influx
-from db.mongo import close_mongo, connect_mongo
-from routers import devices, readings, ws, anomaly, chat, rul
+from db.mongo import close_mongo, connect_mongo, get_db
+from routers import devices, readings, ws, chat, rul
+from routers import alerts as alerts_router
 from routers.ws import manager
 
 logging.basicConfig(
@@ -55,8 +57,24 @@ def _on_mqtt_message(client, userdata, msg):
         }
         if _loop:
             asyncio.run_coroutine_threadsafe(manager.broadcast(device_id, data), _loop)
+            alert = alert_engine.evaluate(device_id, sensor_name, data["value"], data["unit"], _last_known)
+            if alert:
+                asyncio.run_coroutine_threadsafe(_persist_alert(alert), _loop)
     except Exception as e:
         log.error(f"[MQTT] WS push error: {e}")
+
+
+async def _persist_alert(alert: dict) -> None:
+    try:
+        db = get_db()
+        await db.alerts.insert_one(dict(alert))
+        await manager.broadcast(alert["device_id"], {**alert, "type": "alert"})
+        log.info(
+            f"[ALERT] {alert['alert_type']} {alert['severity']} — "
+            f"{alert['device_id']}/{alert['sensor']} — {alert['detail']}"
+        )
+    except Exception as e:
+        log.error(f"[ALERT] persist failed: {e}")
 
 
 def _start_mqtt():
@@ -79,6 +97,7 @@ async def lifespan(app: FastAPI):
     global _loop
     _loop = asyncio.get_running_loop()
     await connect_mongo()
+    asyncio.create_task(alert_engine.cache_loop())
     threading.Thread(target=_start_mqtt, daemon=True, name="mqtt-subscriber").start()
     log.info("[TwinLab] Backend started")
     yield
@@ -96,12 +115,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(devices.router, prefix="/devices", tags=["devices"])
-app.include_router(readings.router, prefix="/devices", tags=["readings"])
-app.include_router(anomaly.router, prefix="/devices", tags=["anomaly"])
-app.include_router(rul.router, prefix="/devices", tags=["rul"])
-app.include_router(chat.router, tags=["chat"])
-app.include_router(ws.router, tags=["websocket"])
+app.include_router(devices.router,       prefix="/devices", tags=["devices"])
+app.include_router(readings.router,      prefix="/devices", tags=["readings"])
+app.include_router(alerts_router.router, prefix="/devices", tags=["alerts"])
+app.include_router(rul.router,           prefix="/devices", tags=["rul"])
+app.include_router(chat.router,          tags=["chat"])
+app.include_router(ws.router,            tags=["websocket"])
 
 
 @app.get("/health", tags=["system"])
