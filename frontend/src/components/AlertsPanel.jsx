@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getAlerts } from '../api'
 
-export default function AlertsPanel({ device }) {
+export default function AlertsPanel({ device, liveMessages = [] }) {
   const [alerts, setAlerts]   = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -18,12 +18,22 @@ export default function AlertsPanel({ device }) {
     }
   }, [device])
 
+  // Poll every 5 s as fallback
   useEffect(() => {
     setAlerts([])
     load()
-    const id = setInterval(load, 30_000)
+    const id = setInterval(load, 5_000)
     return () => clearInterval(id)
   }, [load])
+
+  // React immediately when a new alert arrives via WebSocket
+  const wsAlertCount = useMemo(
+    () => liveMessages.filter(m => m.type === 'alert').length,
+    [liveMessages],
+  )
+  useEffect(() => {
+    if (wsAlertCount > 0) load()
+  }, [wsAlertCount, load])
 
   return (
     <aside className="panel alerts-panel">

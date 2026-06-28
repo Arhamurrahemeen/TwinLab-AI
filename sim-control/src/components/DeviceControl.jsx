@@ -103,6 +103,14 @@ export default function DeviceControl({ device }) {
           onCommit={(v)  => handleSliderCommit("fuel_level", v)}
         />
         <SliderRow
+          label="Load Current"
+          unit="A"
+          value={ctrl?.base_values?.load_current ?? 18}
+          min={0} max={60}
+          onChange={(v) => handleSliderChange("load_current", v)}
+          onCommit={(v)  => handleSliderCommit("load_current", v)}
+        />
+        <SliderRow
           label="Temperature"
           unit="°C"
           value={ctrl?.base_values?.temperature ?? 35}

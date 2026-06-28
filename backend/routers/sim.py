@@ -17,7 +17,7 @@ def _default_ctrl(device_id: str) -> dict:
     return {
         "device_id":    device_id,
         "generator_on": True,
-        "base_values":  {"fuel_level": 70.0, "temperature": 35.0, "humidity": 55.0},
+        "base_values":  {"fuel_level": 70.0, "load_current": 18.0, "temperature": 35.0, "humidity": 55.0},
         "inject": {name: {"active": False, "until_ts": 0} for name in INJECTORS},
         "updated_at":   datetime.now(timezone.utc).isoformat(),
     }

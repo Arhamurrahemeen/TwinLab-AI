@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { getReadings } from '../api'
 
@@ -23,7 +23,18 @@ const fmt = (ts) => {
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
 }
 
-export default function SensorChart({ deviceId, sensor, liveMessages }) {
+function getBreachState(value, threshold) {
+  if (threshold == null) return null
+  const { min, max } = threshold
+  if (max != null && value > max) return 'critical'
+  if (min != null && value < min) return 'critical'
+  // caution zone: within ~12% of max, or within 50% above min
+  if (max != null && value > max * 0.88) return 'caution'
+  if (min != null && min > 0 && value < min * 1.5) return 'caution'
+  return null
+}
+
+export default function SensorChart({ deviceId, sensor, liveMessages, threshold }) {
   const [history, setHistory] = useState([])
 
   useEffect(() => {
@@ -47,15 +58,24 @@ export default function SensorChart({ deviceId, sensor, liveMessages }) {
       .slice(-100)
   }, [history, liveMessages, sensor])
 
-  const color = SENSOR_COLORS[sensor] ?? '#4ECDC4'
+  const color  = SENSOR_COLORS[sensor] ?? '#4ECDC4'
   const latest = chartData.at(-1)
 
+  const breachState = useMemo(
+    () => latest ? getBreachState(latest.value, threshold) : null,
+    [latest, threshold],
+  )
+
+  const valueColor = breachState === 'critical' ? '#E05252'
+                   : breachState === 'caution'  ? '#F5C842'
+                   : null
+
   return (
-    <div className="chart-card">
+    <div className={`chart-card${breachState ? ` chart-card--${breachState}` : ''}`}>
       <div className="chart-header">
-        <span className="chart-title">{sensor.replace('_', ' ')}</span>
+        <span className="chart-title">{sensor.replace(/_/g, ' ')}</span>
         {latest && (
-          <span className="chart-latest">
+          <span className="chart-latest" style={valueColor ? { color: valueColor } : {}}>
             {latest.value.toFixed(3)} <span className="chart-unit">{latest.unit}</span>
           </span>
         )}
@@ -82,8 +102,26 @@ export default function SensorChart({ deviceId, sensor, liveMessages }) {
             labelStyle={{ color: '#8A96A8' }}
             itemStyle={{ color }}
             labelFormatter={fmt}
-            formatter={(v, _) => [`${v.toFixed(4)} ${latest?.unit ?? ''}`, sensor]}
+            formatter={(v) => [`${v.toFixed(4)} ${latest?.unit ?? ''}`, sensor]}
           />
+          {threshold?.min != null && (
+            <ReferenceLine
+              y={threshold.min}
+              stroke="#F5C842"
+              strokeDasharray="4 3"
+              strokeWidth={1.2}
+              label={{ value: `min ${threshold.min}`, fill: '#F5C842', fontSize: 9, position: 'insideTopLeft' }}
+            />
+          )}
+          {threshold?.max != null && (
+            <ReferenceLine
+              y={threshold.max}
+              stroke="#E05252"
+              strokeDasharray="4 3"
+              strokeWidth={1.2}
+              label={{ value: `max ${threshold.max}`, fill: '#E05252', fontSize: 9, position: 'insideTopRight' }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="value"

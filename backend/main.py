@@ -65,6 +65,11 @@ def _on_mqtt_message(client, userdata, msg):
         log.error(f"[MQTT] WS push error: {e}")
 
 
+def _json_safe(d: dict) -> dict:
+    """Convert datetime values to ISO strings so ws.send_json doesn't choke."""
+    return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in d.items()}
+
+
 async def _persist_alert(alert: dict) -> None:
     try:
         db = get_db()
@@ -74,7 +79,7 @@ async def _persist_alert(alert: dict) -> None:
         device_name = device_doc["name"] if device_doc else alert["device_id"]
 
         result = await db.alerts.insert_one(dict(alert))
-        await manager.broadcast(alert["device_id"], {**alert, "type": "alert"})
+        await manager.broadcast(alert["device_id"], {**_json_safe(alert), "type": "alert"})
         log.info(
             f"[ALERT] {alert['alert_type']} {alert['severity']} — "
             f"{alert['device_id']}/{alert['sensor']} — {alert['detail']}"

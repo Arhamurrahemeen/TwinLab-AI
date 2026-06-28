@@ -18,7 +18,7 @@ COOLDOWN_S     = 600    # suppress re-fires of the same alert within 10 min
 THEFT_DROP_L   = 5.0    # litres lost in window to trigger theft
 THEFT_WINDOW_S = 300    # sliding window for theft detection (5 min)
 OFF_AMPS       = 2.0    # load_current below this means generator is off
-CACHE_TTL_S    = 60     # how often to reload thresholds from Mongo
+CACHE_TTL_S    = 10     # how often to reload thresholds from Mongo
 
 # Max-breach on these sensors → critical; everything else → warning
 _CRITICAL_MAX = {"load_current", "temperature"}

@@ -272,8 +272,20 @@
 .chart-card {
   background: #252B35;
   border: 1px solid #2E3542;
+  border-left: 3px solid transparent;
   border-radius: 8px;
   padding: 13px 14px 8px;
+  transition: border-color 0.3s;
+}
+
+.chart-card--caution {
+  border-color: rgba(245, 200, 66, 0.25);
+  border-left-color: #F5C842;
+}
+
+.chart-card--critical {
+  border-color: rgba(224, 82, 82, 0.25);
+  border-left-color: #E05252;
 }
 
 .chart-header {
@@ -430,7 +442,28 @@
   flex-shrink: 0;
 }
 
-/* ─── Add device button ──────────────────────────────────── */
+/* ─── Add / Edit device buttons ─────────────────────────── */
+.device-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edit-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: transparent;
+  color: #8A96A8;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.edit-btn:hover { background: #2E3542; color: #E8EDF2; }
+
 .add-btn {
   width: 22px;
   height: 22px;

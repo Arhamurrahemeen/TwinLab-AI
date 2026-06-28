@@ -64,6 +64,7 @@ export default function App() {
                     deviceId={selectedDevice.device_id}
                     sensor={sensor}
                     liveMessages={liveMessages}
+                    threshold={selectedDevice.thresholds?.[sensor] ?? null}
                   />
                 ))}
               </div>
@@ -71,7 +72,7 @@ export default function App() {
           )}
         </main>
 
-        <AlertsPanel device={selectedDevice} />
+        <AlertsPanel device={selectedDevice} liveMessages={liveMessages} />
       </div>
 
       <ChatPanel device={selectedDevice} />
