@@ -27,13 +27,13 @@
 
 | Layer | Choice |
 |---|---|
-| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration) |
+| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration). Firmware lives in `firmware/twinlab_node_v1/`. **No fuel sensor, no CT clamp owned yet** — fuel-theft and load-current stay simulator-only until those parts are bought. |
 | Messaging | MQTT via **Mosquitto** |
 | Time-series DB | **InfluxDB 2.7** (sensor readings) |
 | Document DB | **MongoDB 7.0** (device registry, thresholds, alerts, sim control) |
 | Backend | **FastAPI** (Python) |
 | AI — chat | **Groq** `llama-3.3-70b-versatile` (Urdu / Roman Urdu / English) |
-| Alerts | **Twilio WhatsApp** (sandbox for MVP), bilingual, rupee-anchored |
+| Alerts | **Twilio WhatsApp** (sandbox for MVP), bilingual, rupee-anchored. **Error 63007 is open** — see `phase/limitations.md` before assuming WhatsApp sends work. |
 | Frontend | **React + Vite** (recharts) |
 | Sim control | Separate **Vite** mini-app, same FastAPI backend |
 | Deploy | Docker Compose (dev) |
@@ -49,8 +49,8 @@ docker compose up -d                                   # Mosquitto + InfluxDB + 
 .venv\Scripts\python ingestion.py                      # MQTT -> InfluxDB
 .venv\Scripts\python simulator.py                      # registry-driven sim publisher
 cd backend && ..\.venv\Scripts\uvicorn main:app --reload --port 8000
-cd frontend && npm run dev                             # dashboard  http://localhost:5173
-cd sim-control && npm run dev                          # sim control mini-app (Phase D+)
+cd frontend && npm run dev                              # dashboard  http://localhost:5173
+cd sim-control && npm run dev                           # sim control mini-app (Phase D+)
 ```
 
 | Service | URL | Creds |
@@ -63,6 +63,18 @@ cd sim-control && npm run dev                          # sim control mini-app (P
 | MongoDB | localhost:27017 | admin / twinlab123 |
 
 > ESP32 note: `MQTT_HOST` in firmware must be the laptop's **LAN IP**, never `localhost`.
+
+### Firmware — compile & flash (`firmware/twinlab_node_v1/`)
+
+```powershell
+arduino-cli compile --fqbn esp32:esp32:esp32 firmware\twinlab_node_v1
+arduino-cli upload -p COM<N> --fqbn esp32:esp32:esp32 firmware\twinlab_node_v1
+arduino-cli monitor -p COM<N> -c baudrate=115200
+```
+
+Replace `COM<N>` with the port Device Manager assigns on connect. Required libraries (install once via `arduino-cli lib install`): `PubSubClient`, `Adafruit MPU6050`, `Adafruit Unified Sensor`, `DHT sensor library`, `ArduinoJson`.
+
+`Config.h` is gitignored — copy `Config.h.example` and fill in `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_HOST` (laptop LAN IP), `DEVICE_ID`.
 
 ---
 
@@ -82,6 +94,7 @@ This contract is the seam that makes the system **source-agnostic**: simulator a
 ## 5. Coding conventions (carry these forward)
 
 - **Flat scripts stay flat.** `ingestion.py`, `simulator.py`, `test_mqtt.py` are intentionally readable, no classes, no DI. Do not "refactor" them into OOP.
+- **Firmware stays flat too.** `.ino` + a handful of `.h`/`.cpp` helper pairs (`Sensors`, `Mqtt`). No C++ class hierarchies, no Arduino "sketch frameworks."
 - **Backend = package structure, but simple.** No DI containers, no abstract base classes, no premature patterns.
 - **Config via `pydantic-settings`** — typed `Settings` singleton in `backend/config.py`, `.env` in `backend/`. Never hard-code credentials. Never commit `.env`.
 - **Logging split:** backend uses the `logging` module with timestamps; flat scripts use bracketed prints (`[MQTT]`, `[OK]`, `[ERROR]`, `[SIM]`).
@@ -100,8 +113,10 @@ This contract is the seam that makes the system **source-agnostic**: simulator a
 - Don't add Kubernetes / Helm / Terraform.
 - Don't write a test suite yet.
 - Don't rename the GitHub repo (`TwinLab-AI`) — it breaks remotes. Fix the **product name in code/UI strings** to "TwinLab" instead.
-- Don't commit `backend/.env` (dev credentials).
+- Don't commit `backend/.env` or firmware `Config.h` (both gitignored, both hold credentials).
 - Don't change the MQTT topic contract.
+- **Don't expand Phase E's sensor set beyond what `phase-9.md` scopes** (temperature, humidity, accel_x/y/z as raw passthrough). Run/stop detection, software hour meter, and a vibration-RMS alert rule were discussed but are explicitly **not** in this phase — they need their own phase doc and a decision from Arham first.
+- Don't claim fuel-theft or overload detection works on real hardware. No fuel sensor or CT clamp is owned yet — those rules stay simulator-only until the parts exist.
 
 ---
 
@@ -156,7 +171,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | B | `phase/phase-6.md` | Generator sensors (`fuel_level`, `load_current`) + threshold alert engine + fuel-theft rule | ✅ |
 | C | `phase/phase-7.md` | Twilio WhatsApp on the alert path (sandbox), bilingual + rupee-anchored | ✅ |
 | D | `phase/phase-8.md` | Simulator control mini-app + `sim_control` collection | ✅ |
-| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors) + brand string fixes | ⬜ |
+| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors, raw passthrough only) + brand string fixes | ⬜ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written.
 
@@ -180,4 +195,4 @@ Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
 
 ---
 
-*Last updated: start of MVP v2 rebuild (post-Shahruk strategy). Generator-first wedge, threshold + fuel-theft alerting, WhatsApp-first, Groq-only, Isolation Forest parked.*
+*Last updated: start of Phase E (hardware buffer). Generator-first wedge, threshold + fuel-theft alerting, WhatsApp-first, Groq-only, Isolation Forest parked. Firmware directory and flashing commands added; Phase E scope guardrail added to prevent silent expansion beyond raw sensor passthrough.*
