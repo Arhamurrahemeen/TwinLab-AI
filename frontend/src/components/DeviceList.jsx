@@ -6,6 +6,7 @@ import EditDevice from './EditDevice'
 // Fixed demo plant order (NFL Recon §2.3 cross-plant narrative); unlisted
 // locations (e.g. legacy non-NFL devices) sort after, alphabetically.
 const PLANT_ORDER = ['SITE Karachi Plant', 'Faisalabad Plant', 'Sharjah Plant', 'Kunri (sourced by Faisalabad)']
+const CRITICALITY_ORDER = { high: 0, medium: 1, low: 2 }
 
 function groupByPlant(devices) {
   const groups = new Map()
@@ -14,7 +15,7 @@ function groupByPlant(devices) {
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key).push(d)
   }
-  return [...groups.entries()].sort(([a], [b]) => {
+  const sortedGroups = [...groups.entries()].sort(([a], [b]) => {
     const ia = PLANT_ORDER.indexOf(a)
     const ib = PLANT_ORDER.indexOf(b)
     if (ia === -1 && ib === -1) return a.localeCompare(b)
@@ -22,6 +23,19 @@ function groupByPlant(devices) {
     if (ib === -1) return -1
     return ia - ib
   })
+  return sortedGroups.map(([plant, list]) => [
+    plant,
+    [...list].sort((a, b) => (CRITICALITY_ORDER[a.criticality] ?? 3) - (CRITICALITY_ORDER[b.criticality] ?? 3)),
+  ])
+}
+
+// Traffic-light rule: red <= 30 days (or expired), yellow <= 180 days, else green.
+function warrantyStatus(expiry) {
+  if (!expiry) return null
+  const daysLeft = (new Date(expiry) - new Date()) / 86_400_000
+  if (daysLeft <= 30) return 'red'
+  if (daysLeft <= 180) return 'yellow'
+  return 'green'
 }
 
 export default function DeviceList({ selectedId, onSelect }) {
@@ -88,6 +102,11 @@ export default function DeviceList({ selectedId, onSelect }) {
               <div className="device-card-top">
                 <span className="device-name">{d.name}</span>
                 <div className="device-card-actions">
+                  {d.criticality && (
+                    <span className={`criticality-badge criticality-badge--${d.criticality}`}>
+                      {d.criticality}
+                    </span>
+                  )}
                   <span className={`source-badge source-badge--${d.source ?? 'simulator'}`}>
                     {d.source === 'hardware' ? 'HW' : 'SIMULATED'}
                   </span>
@@ -101,6 +120,12 @@ export default function DeviceList({ selectedId, onSelect }) {
                 </div>
               </div>
               <span className="device-location">{d.location}</span>
+              {d.warranty_expiry && (
+                <span className="device-warranty">
+                  <span className={`warranty-dot warranty-dot--${warrantyStatus(d.warranty_expiry)}`} />
+                  warranty {d.warranty_expiry}
+                </span>
+              )}
               {d.status && d.status !== 'active' && (
                 <span className="status-inactive">inactive</span>
               )}

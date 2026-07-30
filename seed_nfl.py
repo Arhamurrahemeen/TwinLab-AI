@@ -1,15 +1,27 @@
 """
 TwinLab NFL/SCAPM seed script — idempotent, upsert-based.
 Seeds 5 NFL-flavored devices + matching sim_control docs for the ELXR'26 demo.
-Safe to re-run: upserts by device_id, never inserts duplicates.
+Safe to re-run: upserts by device_id, never inserts duplicates. run_hours is
+NOT reset on re-run (would undo live accumulation) — only $setOnInsert.
 """
 
+import os
 from datetime import datetime, timezone
 
 import pymongo
+from dotenv import load_dotenv
+
+load_dotenv("backend/.env")
+# Sandbox recipient collapse (Arham's confirmation, phase-11): all seeded
+# contacts share the one configured Twilio sandbox number.
+_ARHAM_WHATSAPP = os.environ.get("ALERT_WHATSAPP_TO", "")
 
 MONGO_URI = "mongodb://admin:twinlab123@localhost:27017"
 MONGO_DB  = "twinlab"
+
+
+def _contact(role: str, name: str) -> dict:
+    return {"role": role, "name": name, "whatsapp": _ARHAM_WHATSAPP}
 
 # ponytail: base_values.temperature is intentionally offset -5 on devices where
 # generator_on defaults True, because simulator.py adds +5C when gen_on (its
@@ -30,6 +42,15 @@ DEVICES = [
             "fuel_level":   {"min": 20, "max": None},
         },
         "status": "active",
+        "asset_type": "genset",
+        "plant": "SITE Karachi",
+        "criticality": "high",
+        "warranty_expiry": datetime(2026, 11, 30),
+        "purchase_date": datetime(2023, 11, 30),
+        "vendor_name": "Cummins PK Service",
+        "vendor_whatsapp": _ARHAM_WHATSAPP,
+        "run_hours_threshold": 500,
+        "contacts": [_contact("owner", "Arham"), _contact("maintenance_head", "SITE Ops Head")],
         "base_values": {"fuel_level": 70, "load_current": 18, "temperature": 30},  # -5 offset (gen_on)
     },
     {
@@ -44,6 +65,15 @@ DEVICES = [
             "load_current": {"min": None, "max": 25},
         },
         "status": "active",
+        "asset_type": "compressor",
+        "plant": "SITE Karachi",
+        "criticality": "medium",
+        "warranty_expiry": datetime(2027, 8, 15),
+        "purchase_date": datetime(2024, 8, 15),
+        "vendor_name": "Atlas Copco Karachi",
+        "vendor_whatsapp": _ARHAM_WHATSAPP,
+        "run_hours_threshold": 500,
+        "contacts": [_contact("maintenance_head", "SITE Ops Head"), _contact("vendor", "Ali Traders")],
         "base_values": {"load_current": 15, "temperature": 42},
     },
     {
@@ -58,6 +88,19 @@ DEVICES = [
             "load_current": {"min": None, "max": 20},
         },
         "status": "active",
+        "asset_type": "chiller",
+        "plant": "Faisalabad",
+        "criticality": "high",
+        "warranty_expiry": datetime(2026, 8, 5),
+        "purchase_date": datetime(2022, 8, 5),
+        "vendor_name": "Danfoss Cooling PK",
+        "vendor_whatsapp": _ARHAM_WHATSAPP,
+        "run_hours_threshold": 750,
+        "contacts": [
+            _contact("owner", "Arham"),
+            _contact("maintenance_head", "Faisalabad Ops Head"),
+            _contact("supply_chain_lead", "FSD Supply Chain Lead"),
+        ],
         "base_values": {"temperature": 2, "humidity": 60, "load_current": 12},
     },
     {
@@ -72,6 +115,15 @@ DEVICES = [
             "humidity":    {"min": None, "max": 90},
         },
         "status": "active",
+        "asset_type": "cold_storage",
+        "plant": "Sharjah",
+        "criticality": "high",
+        "warranty_expiry": datetime(2027, 4, 20),
+        "purchase_date": datetime(2024, 4, 20),
+        "vendor_name": "Emerson Cold Chain",
+        "vendor_whatsapp": _ARHAM_WHATSAPP,
+        "run_hours_threshold": 750,
+        "contacts": [_contact("owner", "Arham"), _contact("supply_chain_lead", "Sharjah Supply Chain Lead")],
         "base_values": {"temperature": -25, "humidity": 65},  # -5 offset (gen_on)
     },
     {
@@ -86,6 +138,16 @@ DEVICES = [
             "humidity":    {"min": None, "max": 65},
         },
         "status": "active",
+        "asset_type": "storage",
+        "plant": "Kunri",
+        "criticality": "high",
+        "warranty_expiry": datetime(2028, 1, 10),
+        "purchase_date": datetime(2025, 1, 10),
+        "vendor_name": "Local Kunri Vendor",
+        "vendor_whatsapp": _ARHAM_WHATSAPP,
+        # No load_current sensor on this device — run_hours accumulation is a
+        # no-op, so run_hours_threshold is left at the schema default (unused).
+        "contacts": [_contact("supply_chain_lead", "FSD Supply Chain Lead"), _contact("owner", "Arham")],
         "base_values": {"temperature": 5, "humidity": 55},  # -5 offset (gen_on)
     },
 ]

@@ -19,30 +19,36 @@ THEFT_DROP_L   = 5.0    # litres lost in window to trigger theft
 THEFT_WINDOW_S = 300    # sliding window for theft detection (5 min)
 OFF_AMPS       = 2.0    # load_current below this means generator is off
 CACHE_TTL_S    = 10     # how often to reload thresholds from Mongo
+RUN_HOURS_FLUSH_S = 60  # how often to batch-persist in-memory run-hours to Mongo
 
 # Max-breach on these sensors → critical; everything else → warning
 _CRITICAL_MAX = {"load_current", "temperature"}
 
 # ── Module-level state (GIL-safe for CPython dict reads/replacements) ───
 _threshold_cache: dict = {}   # {device_id: {sensor: {"min": v|None, "max": v|None}}}
+_run_hours_threshold_cache: dict = {}  # {device_id: int}
 _cache_loaded_at: float = 0.0
 
 _cooldown: dict = {}          # {(device_id, sensor, alert_type): fired_ts_ms}
 _fuel_buf: dict = {}          # {device_id: deque of (ts_ms, fuel_level)}
 
+_run_hours_mem: dict = {}     # {device_id: float} accumulated run-hours since last reset
+_last_hr_ts: dict = {}        # {device_id: float} unix seconds of last accumulation tick
+
 
 # ── Cache ────────────────────────────────────────────────────
 
 async def refresh_cache() -> None:
-    """Reload all device thresholds from Mongo."""
-    global _threshold_cache, _cache_loaded_at
+    """Reload all device thresholds + run_hours_threshold from Mongo."""
+    global _threshold_cache, _run_hours_threshold_cache, _cache_loaded_at
     from db.mongo import get_db
     try:
         db  = get_db()
         docs = await db.devices.find(
-            {}, {"_id": 0, "device_id": 1, "thresholds": 1}
+            {}, {"_id": 0, "device_id": 1, "thresholds": 1, "run_hours_threshold": 1}
         ).to_list(length=500)
         _threshold_cache = {d["device_id"]: d.get("thresholds") or {} for d in docs}
+        _run_hours_threshold_cache = {d["device_id"]: d.get("run_hours_threshold") or 500 for d in docs}
         _cache_loaded_at = time.time()
         log.debug(f"[alerts] cache refreshed — {len(_threshold_cache)} devices")
     except Exception as e:
@@ -54,6 +60,47 @@ async def cache_loop() -> None:
     while True:
         await refresh_cache()
         await asyncio.sleep(CACHE_TTL_S)
+
+
+async def seed_run_hours() -> None:
+    """One-time startup seed of in-memory run-hours from Mongo, so a backend
+    restart doesn't zero hours accumulated before the last periodic flush."""
+    from db.mongo import get_db
+    try:
+        db   = get_db()
+        docs = await db.devices.find({}, {"_id": 0, "device_id": 1, "run_hours": 1}).to_list(length=500)
+        for d in docs:
+            _run_hours_mem[d["device_id"]] = d.get("run_hours") or 0.0
+        log.info(f"[alerts] run_hours seeded for {len(docs)} device(s)")
+    except Exception as e:
+        log.error(f"[alerts] run_hours seed failed: {e}")
+
+
+async def flush_run_hours_loop() -> None:
+    """Background task: batch-persist in-memory run-hours to Mongo every
+    RUN_HOURS_FLUSH_S seconds (the hot path never writes to Mongo per-tick)."""
+    from db.mongo import get_db
+    while True:
+        await asyncio.sleep(RUN_HOURS_FLUSH_S)
+        if not _run_hours_mem:
+            continue
+        try:
+            db  = get_db()
+            now = datetime.now(timezone.utc)
+            for device_id, hours in list(_run_hours_mem.items()):
+                await db.devices.update_one(
+                    {"device_id": device_id},
+                    {"$set": {"run_hours": hours, "last_run_hours_update": now}},
+                )
+        except Exception as e:
+            log.error(f"[alerts] run_hours flush failed: {e}")
+
+
+def set_run_hours(device_id: str, hours: float) -> None:
+    """Sync in-memory run-hours to a value written directly via PATCH /devices/{id}
+    (e.g. the demo trigger), so the next accumulation tick builds on it correctly."""
+    _run_hours_mem[device_id] = hours
+    _last_hr_ts.pop(device_id, None)
 
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -80,6 +127,15 @@ def _make_alert(
         msg_ur = (
             f"{device_id} — generator BAND honay ke bawajood {mins} min mein "
             f"{drop_litres:.1f}L fuel kam hua. Chori ka shak. Taqreeban PKR {rupees:,} nuqsan."
+        )
+    elif alert_type == "consumable_reorder":
+        msg_en = (
+            f"🟠 {device_id} — {value:.0f}h run-hours reached ({detail}). "
+            f"Consumable reorder due to avoid SLOB accumulation."
+        )
+        msg_ur = (
+            f"{device_id} — {value:.0f} ghante ho gaye ({detail}). "
+            f"Consumable order karein — SLOB nuqsaan se bachne ke liye."
         )
     elif severity == "critical":
         msg_en = f"CRITICAL: {device_id} — {sensor} = {value} {unit} ({detail})."
@@ -183,5 +239,35 @@ def evaluate(
                         drop_litres=drop,
                         window_s=float(THEFT_WINDOW_S),
                     )
+
+    return None
+
+
+def evaluate_run_hours(device_id: str, value: float) -> dict | None:
+    """
+    Accumulate engine run-hours from load_current readings (value > OFF_AMPS means
+    running). Fires a consumable_reorder alert when accumulated hours cross the
+    device's run_hours_threshold, then resets the counter. Sync — called from the
+    MQTT thread, same as evaluate().
+    """
+    if value <= OFF_AMPS:
+        _last_hr_ts.pop(device_id, None)
+        return None
+
+    now  = time.time()
+    last = _last_hr_ts.get(device_id, now)
+    _run_hours_mem[device_id] = _run_hours_mem.get(device_id, 0.0) + (now - last) / 3600
+    _last_hr_ts[device_id] = now
+
+    hours     = _run_hours_mem[device_id]
+    threshold = _run_hours_threshold_cache.get(device_id, 500)
+
+    if hours >= threshold and not _in_cooldown(device_id, "run_hours", "consumable_reorder"):
+        _set_cooldown(device_id, "run_hours", "consumable_reorder")
+        _run_hours_mem[device_id] = 0.0
+        return _make_alert(
+            device_id, "run_hours", "consumable_reorder", "warning",
+            round(hours, 1), "h", f"reached {threshold}h threshold",
+        )
 
     return None

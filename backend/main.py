@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI
@@ -61,6 +62,10 @@ def _on_mqtt_message(client, userdata, msg):
             alert = alert_engine.evaluate(device_id, sensor_name, data["value"], data["unit"], _last_known)
             if alert:
                 asyncio.run_coroutine_threadsafe(_persist_alert(alert), _loop)
+            if sensor_name == "load_current":
+                run_hours_alert = alert_engine.evaluate_run_hours(device_id, data["value"])
+                if run_hours_alert:
+                    asyncio.run_coroutine_threadsafe(_persist_alert(run_hours_alert), _loop)
     except Exception as e:
         log.error(f"[MQTT] WS push error: {e}")
 
@@ -74,9 +79,14 @@ async def _persist_alert(alert: dict) -> None:
     try:
         db = get_db()
 
-        # Resolve device name for WhatsApp body
-        device_doc  = await db.devices.find_one({"device_id": alert["device_id"]}, {"name": 1})
-        device_name = device_doc["name"] if device_doc else alert["device_id"]
+        # Resolve full device doc — routing (contacts) + WhatsApp body need more than just name
+        device_doc = await db.devices.find_one({"device_id": alert["device_id"]}, {"_id": 0}) or {}
+
+        if alert["alert_type"] == "consumable_reorder":
+            await db.devices.update_one(
+                {"device_id": alert["device_id"]},
+                {"$set": {"run_hours": 0.0, "last_run_hours_update": datetime.now(timezone.utc)}},
+            )
 
         result = await db.alerts.insert_one(dict(alert))
         await manager.broadcast(alert["device_id"], {**_json_safe(alert), "type": "alert"})
@@ -86,13 +96,12 @@ async def _persist_alert(alert: dict) -> None:
         )
 
         # Send WhatsApp in a thread (Twilio SDK is sync)
-        loop = asyncio.get_running_loop()
-        sent = await loop.run_in_executor(None, whatsapp.send_alert, alert, device_name)
-        if sent:
-            await db.alerts.update_one(
-                {"_id": result.inserted_id},
-                {"$set": {"whatsapp_sent": True}},
-            )
+        loop    = asyncio.get_running_loop()
+        routing = await loop.run_in_executor(None, whatsapp.send_alert, alert, device_doc)
+        update  = {"whatsapp_sent": bool(routing["sent"])}
+        if routing["sent"]:
+            update["routed_to"] = routing["sent"]
+        await db.alerts.update_one({"_id": result.inserted_id}, {"$set": update})
     except Exception as e:
         log.error(f"[ALERT] persist failed: {e}")
 
@@ -117,7 +126,10 @@ async def lifespan(app: FastAPI):
     global _loop
     _loop = asyncio.get_running_loop()
     await connect_mongo()
+    await alert_engine.refresh_cache()
+    await alert_engine.seed_run_hours()
     asyncio.create_task(alert_engine.cache_loop())
+    asyncio.create_task(alert_engine.flush_run_hours_loop())
     threading.Thread(target=_start_mqtt, daemon=True, name="mqtt-subscriber").start()
     log.info("[TwinLab] Backend started")
     yield

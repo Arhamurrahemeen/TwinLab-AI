@@ -173,7 +173,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | D | `phase/phase-8.md` | Simulator control mini-app + `sim_control` collection | ✅ |
 | E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors, raw passthrough only) + brand string fixes | ⏸ **Deferred** — hardware skipped for ELXR'26; brand-string fix absorbed into Phase F |
 | F | `phase/phase-10.md` | NFL/SCAPM reframe: seed 4 NFL devices, brand-string kill, SIMULATED badge | ✅ |
-| G | `phase/phase-11.md` | Three CRM/inventory features: asset registry (warranty/vendor), consumable auto-reorder (`run_hours`), role-based WhatsApp routing | ⬜ |
+| G | `phase/phase-11.md` | Three CRM/inventory features: asset registry (warranty/vendor), consumable auto-reorder (`run_hours`), role-based WhatsApp routing | ✅ |
 | H | `phase/phase-12.md` | Demo choreography: manual injector buttons + `Demo Reset` + screen-recording backup | ⬜ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).

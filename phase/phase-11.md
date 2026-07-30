@@ -224,5 +224,35 @@ cd sim-control && npm run dev
 **Rubric impact:** closes the theme-fit gap (rubric #1, #2, #7 lift). Sets up Phase 12 for the deterministic demo choreography.
 
 ---
-## ✅ Actually achieved   <!-- append after phase is done -->
-<what shipped / deviations / deferrals / gotchas>
+## ✅ Actually achieved
+
+**Shipped:**
+- `backend/models/device.py` — additive fields on `DeviceCreate`/`DeviceUpdate`/`DeviceResponse`: `asset_type`, `plant`, `criticality`, `warranty_expiry`, `purchase_date`, `vendor_name`, `vendor_whatsapp`, `run_hours`, `run_hours_threshold`, `last_run_hours_update`, `contacts`. Verified additive: the pre-existing `shell-gen-1` device (created before this phase) still validates fine through `GET /devices`, picking up field defaults.
+- `backend/alerts.py` — `evaluate_run_hours()` (in-memory accumulation from `load_current` readings, fires `consumable_reorder` on threshold cross, resets counter), `seed_run_hours()` (startup, restores in-memory counters from Mongo), `flush_run_hours_loop()` (60s batch persist), `set_run_hours()` (syncs in-memory state when a PATCH sets `run_hours` directly), `_make_alert` extended with a `consumable_reorder` message branch.
+- `backend/whatsapp.py` — `send_alert(alert, device)` now routes to N contacts via the `ROUTING` table (severity, alert_type) → roles, `[→ role: name]` prefix in the message body, falls back to `settings.alert_whatsapp_to` when no contacts match. Returns `{sent, failed}` instead of a bool.
+- `backend/main.py` — calls `evaluate_run_hours()` on every `load_current` reading; `_persist_alert` fetches the full device doc (not just name) for routing, zeroes+persists `run_hours` immediately on a `consumable_reorder` fire, records `alert.routed_to`; lifespan now runs `refresh_cache()` + `seed_run_hours()` before the MQTT thread starts, plus `flush_run_hours_loop()` as a background task.
+- `backend/routers/devices.py` — PATCH now calls `alert_engine.set_run_hours()` when the update body includes `run_hours` (see deviation #1).
+- `seed_nfl.py` — extended with asset registry fields, warranty/vendor sample data, and role-tagged `contacts` for all 5 devices, per the phase's table. WhatsApp number loaded from `backend/.env` at runtime (`python-dotenv`), not hardcoded.
+- `frontend/src/components/EditDevice.jsx` — form fields for asset_type, plant, criticality, warranty_expiry, purchase_date, vendor_name, vendor_whatsapp, run_hours (read-only display), run_hours_threshold. Contacts editing skipped per the doc's own "skip if time-tight" allowance.
+- `frontend/src/components/DeviceList.jsx` — criticality badge (color-coded), warranty traffic-light dot + expiry date, devices sorted by criticality (high→medium→low) within each plant group.
+- `frontend/src/components/AlertsPanel.jsx` — 🛒 icon + "consumable reorder" tag for the new alert type, `Sent to: {roles}` line from `alert.routed_to`.
+- `frontend/src/App.css` — criticality badge, warranty dot, and consumable_reorder tag colors.
+
+**Deviations:**
+1. **`routers/devices.py` code change** — the doc said "no code change expected... but verify." In practice, acceptance check 1's demo trigger (`PATCH run_hours` → next `load_current` tick crosses threshold) only works if the PATCH also updates `alerts.py`'s in-memory `_run_hours_mem` counter, since `evaluate_run_hours()` never re-reads Mongo per-tick (by design, to avoid a hot-path DB read). Added one conditional call (`alert_engine.set_run_hours(...)`) to close that gap.
+2. **Demo-trigger timing** — `evaluate_run_hours()` follows the doc's own formula (`delta_h = delta_s / 3600`, real wall-clock). Patching `run_hours` to `threshold - 0.1` does **not** cross on the literal next tick — it takes ~6 minutes of continuous above-`OFF_AMPS` readings to close a 0.1h gap at ~1 reading/sec. Verified the mechanism is correct by patching to `threshold - 0.0003` instead (crosses within one tick, confirmed: alert fired with `value: 500.0`). Flagging for Phase H — the demo choreography should patch closer to the threshold for a near-instant trigger, or accept the ~6 min wait.
+3. **Twilio send unverified end-to-end** — `twilio_account_sid` isn't configured in this dev environment (pre-existing; see `phase/limitations.md`'s Error 63007 entry), so `whatsapp_sent` stays `false` for all test alerts. Routing *logic* was verified directly in isolation: `ROUTING[(severity, alert_type)]` resolves the correct roles, contacts are filtered correctly, and `_format_body` produces the `[→ role: name]`-prefixed bilingual text. Actual WhatsApp delivery with visible role tags wasn't observed live — recommend a real send test once Twilio creds are refreshed.
+
+**Deferred:** contacts-array editing UI in `EditDevice.jsx` (per the doc's own guidance — seed data covers the demo). No changes to `rul.py`, Groq chat, or auth, per guardrails.
+
+**Gotchas:**
+- `bson`/pymongo cannot encode Python `date` objects — `seed_nfl.py`'s `warranty_expiry`/`purchase_date` had to be `datetime` instances (midnight), which Pydantic v2 then coerces back to `date` on the `DeviceResponse` read path. A `date(...)` literal would have raised `InvalidDocument` on the first seed run.
+- Windows console `cp1252` can't print the 🟠/🛒 emoji used in alert bodies — hit this only in an ad-hoc test script's `print()`, not in the actual server path (emoji only ever go into a Twilio message body or a JSON response, never a console `log.info`), so no production risk — but worth knowing if debugging interactively on Windows.
+- Killing/restarting the dev `uvicorn --reload` process via PID was unreliable in this shell session (stale `netstat` entries, PID reuse); startup-seed behavior (`seed_run_hours`) was instead verified by calling it directly in an isolated script against the live Mongo state, which confirmed accumulated hours survive a fresh read rather than zeroing.
+
+**Acceptance checks — results:**
+1. ✅ `PATCH /devices/NFL-SITE-COMP-02 {"run_hours": 499.9997}` → next `load_current` tick fired `consumable_reorder` (`value: 500.0`, `detail: "reached 500h threshold"`). WhatsApp routing resolved to `[vendor, supply_chain_lead]` per the `(warning, consumable_reorder)` rule (send itself unverified — see deviation #3).
+2. ✅ Injected `overheat` on `NFL-SITE-GEN-01` → critical threshold alert; routing resolved to `[owner, maintenance_head]` (confirmed via isolated routing test — both contacts matched).
+3. ✅ Injected `fuel_theft` on `NFL-SITE-GEN-01` (after resetting fuel to 80L so a real drop was observable) → critical `fuel_theft` alert fired with `message_ur` containing "Chori ka shak" and a PKR estimate, per the existing template.
+4. ✅ (verified via direct function call rather than a full process restart — see gotchas) `seed_run_hours()` correctly restores in-memory counters from each device's persisted `run_hours`, not zero.
+5. ✅ Re-ran `seed_nfl.py` — 5/5 upserted, no duplicate-key errors, device count unchanged, `run_hours` on `NFL-SITE-COMP-02` preserved at its accumulated value (not reset to 0 by the reseed).

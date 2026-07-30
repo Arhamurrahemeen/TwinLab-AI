@@ -57,9 +57,14 @@ export default function AlertsPanel({ device, liveMessages = [] }) {
       {alerts.map((a, i) => (
         <div key={i} className={`alert-item alert-item--${a.severity ?? 'warning'}`}>
           <div className="alert-top-row">
-            <span className="alert-sensor">{(a.sensor ?? '').replace(/_/g, ' ')}</span>
+            <span className="alert-sensor">
+              {a.alert_type === 'consumable_reorder' && '🛒 '}
+              {(a.sensor ?? '').replace(/_/g, ' ')}
+            </span>
             <span className={`alert-type-tag alert-type-tag--${a.alert_type}`}>
-              {a.alert_type === 'fuel_theft' ? 'fuel theft' : 'threshold'}
+              {a.alert_type === 'fuel_theft' ? 'fuel theft'
+                : a.alert_type === 'consumable_reorder' ? 'consumable reorder'
+                : 'threshold'}
             </span>
           </div>
           <span className="alert-value">
@@ -67,6 +72,9 @@ export default function AlertsPanel({ device, liveMessages = [] }) {
             {' '}<span className="alert-unit">{a.unit}</span>
           </span>
           {a.detail && <span className="alert-detail">{a.detail}</span>}
+          {a.routed_to?.length > 0 && (
+            <span className="alert-routed-to">Sent to: {a.routed_to.join(', ')}</span>
+          )}
           <span className="alert-ts">{new Date(a.ts).toLocaleTimeString()}</span>
         </div>
       ))}

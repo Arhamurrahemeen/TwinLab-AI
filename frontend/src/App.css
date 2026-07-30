@@ -425,6 +425,12 @@
   border: 1px solid rgba(224, 82, 82, 0.3);
 }
 
+.alert-type-tag--consumable_reorder {
+  background: rgba(224, 168, 82, 0.12);
+  color: #E0A852;
+  border: 1px solid rgba(224, 168, 82, 0.3);
+}
+
 .alert-value {
   font-size: 14px;
   font-weight: 600;
@@ -442,6 +448,12 @@
   font-size: 11px;
   color: #8A96A8;
   font-style: italic;
+}
+
+.alert-routed-to {
+  font-size: 10px;
+  color: #4A9B8E;
+  letter-spacing: 0.2px;
 }
 
 .alert-ts {
@@ -770,6 +782,39 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
 }
+
+.criticality-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.criticality-badge--high   { background: rgba(224, 82, 82, 0.15);  color: #E05252; border: 1px solid rgba(224, 82, 82, 0.35); }
+.criticality-badge--medium { background: rgba(224, 168, 82, 0.15); color: #E0A852; border: 1px solid rgba(224, 168, 82, 0.35); }
+.criticality-badge--low    { background: rgba(138, 150, 168, 0.15); color: #8A96A8; border: 1px solid rgba(138, 150, 168, 0.35); }
+
+.device-warranty {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #8A96A8;
+}
+
+.warranty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.warranty-dot--green  { background: #56C596; }
+.warranty-dot--yellow { background: #E0A852; }
+.warranty-dot--red    { background: #E05252; }
 
 /* ─── Register Device modal ──────────────────────────────── */
 .modal-overlay {
