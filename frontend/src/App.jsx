@@ -21,10 +21,9 @@ export default function App() {
           </div>
           <span className="brand-twin">Twin</span>
           <span className="brand-lab">Lab</span>
-          <span className="brand-pro">PRO</span>
         </div>
         <span className="navbar-sep" />
-        <span className="navbar-sub">Industrial Monitor</span>
+        <span className="navbar-sub">SCAPM for Pakistani Industry</span>
         <div className="navbar-right">
           <span className={`status-dot ${connected ? 'status-dot--live' : 'status-dot--off'}`} />
           <span className={`status-label ${connected ? '' : 'status-label--off'}`}>

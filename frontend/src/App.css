@@ -171,6 +171,34 @@
   border-right: 1px solid #2E3542;
 }
 
+.plant-summary-strip {
+  font-size: 11px;
+  color: #8A96A8;
+  letter-spacing: 0.2px;
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #2E3542;
+}
+
+.plant-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plant-group + .plant-group {
+  margin-top: 10px;
+}
+
+.plant-group-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #8A96A8;
+  margin: 8px 0 4px;
+}
+
 .device-card {
   display: flex;
   flex-direction: column;
@@ -724,9 +752,10 @@
 }
 
 .source-badge--simulator {
-  background: rgba(86, 197, 150, 0.12);
-  color: #56C596;
-  border: 1px solid rgba(86, 197, 150, 0.3);
+  background: #D9531E;
+  color: #FFFFFF;
+  border: 1px solid #D9531E;
+  text-transform: uppercase;
 }
 
 .source-badge--hardware {

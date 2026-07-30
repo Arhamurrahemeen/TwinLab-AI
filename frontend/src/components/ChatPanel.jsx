@@ -37,7 +37,7 @@ export default function ChatPanel({ device }) {
       <button
         className="chat-fab"
         onClick={() => setOpen(o => !o)}
-        title="TwinLab AI Assistant"
+        title="TwinLab Assistant"
       >
         {open ? '✕' : '💬'}
       </button>
@@ -45,7 +45,7 @@ export default function ChatPanel({ device }) {
       {open && (
         <div className="chat-panel">
           <div className="chat-header">
-            <span className="chat-title">TwinLab AI</span>
+            <span className="chat-title">TwinLab</span>
             {device && <span className="chat-device">{device.name}</span>}
             <span className="chat-sub">Urdu / English</span>
           </div>

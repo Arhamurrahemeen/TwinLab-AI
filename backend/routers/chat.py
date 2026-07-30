@@ -13,7 +13,7 @@ router = APIRouter()
 
 _SAFE_ID = re.compile(r'^[\w\-]+$')
 
-SYSTEM_PROMPT = """You are TwinLab AI, an industrial IoT assistant for factory monitoring.
+SYSTEM_PROMPT = """You are TwinLab, an industrial IoT assistant for factory monitoring.
 You help factory operators — many of whom speak Urdu — understand their equipment health.
 
 Rules:
