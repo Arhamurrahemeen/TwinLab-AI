@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
-
-const BASE = '/api'
+import { postChat } from '../api'
 
 export default function ChatPanel({ device }) {
   const [open, setOpen] = useState(false)
@@ -19,15 +18,7 @@ export default function ChatPanel({ device }) {
     setLoading(true)
 
     try {
-      const res = await fetch(`${BASE}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: device?.device_id ?? 'unknown',
-          message: text,
-        }),
-      })
-      const data = await res.json()
+      const data = await postChat(device?.device_id ?? 'unknown', text)
       setMessages(prev => [...prev, { role: 'ai', text: data.reply ?? 'No response.' }])
     } catch {
       setMessages(prev => [...prev, { role: 'ai', text: 'Connection error. Please try again.' }])

@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     influx_bucket: str = "twinlab"
     mongo_uri: str = "mongodb://admin:twinlab123@localhost:27017"
     mongo_db: str = "twinlab"
-    gemini_api_key: str = ""
     groq_api_key: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""

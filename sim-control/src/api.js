@@ -17,5 +17,4 @@ async function _put(path, body) {
 }
 
 export const getSimDevices  = ()       => _get("/sim")
-export const getSimCtrl     = (id)     => _get(`/sim/${id}`)
 export const putSimCtrl     = (id, b)  => _put(`/sim/${id}`, b)

@@ -8,7 +8,7 @@
 
 ## 1. What TwinLab is
 
-**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is an **IIoT digital twin + predictive maintenance platform** by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently in **MVP rebuild (v2)** ahead of NIC Hyderabad / NIC Karachi.
+**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is a **Supply Chain Asset Performance Management (SCAPM) platform** — non-invasive condition monitoring + bilingual WhatsApp alerts, priced in PKR. Same Gartner category as Siemens MindSphere / GE Predix / IBM Maximo / PTC ThingWorx, positioned as **APM 4.0** (wireless + standalone cloud) vs their APM 3.0 (deep OT integration required). Built by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently in **MVP rebuild (v2) — Phase F NFL/SCAPM reframe** for ELXR'26, with NIC Hyderabad / NIC Karachi to follow.
 
 **First vertical wedge: generator monitoring** (banks, hospitals, telecom towers, factories, commercial buildings). The platform identity stays broad — generators are the entry point, not the whole product.
 
@@ -171,9 +171,12 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | B | `phase/phase-6.md` | Generator sensors (`fuel_level`, `load_current`) + threshold alert engine + fuel-theft rule | ✅ |
 | C | `phase/phase-7.md` | Twilio WhatsApp on the alert path (sandbox), bilingual + rupee-anchored | ✅ |
 | D | `phase/phase-8.md` | Simulator control mini-app + `sim_control` collection | ✅ |
-| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors, raw passthrough only) + brand string fixes | ⬜ |
+| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors, raw passthrough only) + brand string fixes | ⏸ **Deferred** — hardware skipped for ELXR'26; brand-string fix absorbed into Phase F |
+| F | `phase/phase-10.md` | NFL/SCAPM reframe: seed 4 NFL devices, brand-string kill, SIMULATED badge | ⬜ |
+| G | `phase/phase-11.md` | Three CRM/inventory features: asset registry (warranty/vendor), consumable auto-reorder (`run_hours`), role-based WhatsApp routing | ⬜ |
+| H | `phase/phase-12.md` | Demo choreography: manual injector buttons + `Demo Reset` + screen-recording backup | ⬜ |
 
-Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written.
+Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).
 
 ---
 
@@ -195,4 +198,4 @@ Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
 
 ---
 
-*Last updated: start of Phase E (hardware buffer). Generator-first wedge, threshold + fuel-theft alerting, WhatsApp-first, Groq-only, Isolation Forest parked. Firmware directory and flashing commands added; Phase E scope guardrail added to prevent silent expansion beyond raw sensor passthrough.*
+*Last updated: start of Phase F (NFL/SCAPM reframe) for ELXR'26. Phase E hardware buffer deferred — no ESP32 firmware work this hackathon; MQTT contract stays untouched so ESP32 can rejoin later. Reframe scope: NFL-flavored seed devices, SIMULATED badge (theft alert shown as simulator-only), brand-string cleanup absorbed from Phase E, three CRM/inventory features (asset registry, consumable auto-reorder, role-based WhatsApp routing), demo choreography (manual injector buttons + Demo Reset). Non-invasive install narrative and generator-first wedge preserved; Groq-only, Isolation Forest still parked.*

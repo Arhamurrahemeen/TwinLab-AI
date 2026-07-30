@@ -2,7 +2,9 @@
 
 ![TwinLab](./assets/banner.svg)
 
-**Generator-first IIoT predictive maintenance — built for Pakistan's asset-heavy SMEs**
+**Pakistan's SCAPM alternative — non-invasive condition monitoring + WhatsApp alerts, priced in PKR**
+
+<sub>Supply Chain Asset Performance Management · Generator-first wedge · SME to enterprise (NFL, HSK, Shahruk)</sub>
 
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=flat-square)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white&style=flat-square)](https://fastapi.tiangolo.com)
@@ -12,7 +14,7 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white&style=flat-square)](https://docker.com)
 [![Groq](https://img.shields.io/badge/Groq-F55036?logo=groq&logoColor=white&style=flat-square)](https://groq.com)
 
-[![MVP v2](https://img.shields.io/badge/MVP%20v2-Phase%20B%20Complete-539091?style=flat-square)]()
+[![MVP v2](https://img.shields.io/badge/MVP%20v2-Phase%20F%20in%20flight-539091?style=flat-square)]()
 [![Status](https://img.shields.io/badge/Status-Active%20Build-orange?style=flat-square)]()
 
 </div>
@@ -40,16 +42,18 @@
 
 </div>
 
+**Category:** Supply Chain Asset Performance Management (SCAPM) — Gartner-recognized enterprise software slot alongside Siemens MindSphere, GE Predix, IBM Maximo, PTC ThingWorx. TwinLab occupies the **APM 4.0** sub-slot: wireless condition monitoring + standalone Pakistani cloud, no OT integration required. Same product reaches an SME diesel workshop *and* an NFL Faisalabad plant.
+
 Two products, one engine.
 
 | | TwinLab Pro | TwinLab Edu |
 | :--- | :--- | :--- |
-| **Who** | Banks · hospitals · telecom towers · factories | Engineering students |
-| **Entry point** | Generator monitoring (fuel, load, temperature, vibration) | Virtual IIoT experiment canvas |
-| **Alert channel** | WhatsApp (owner) + live dashboard (ops head) | In-app coaching |
+| **Who** | SMEs → enterprise (banks · hospitals · telecom · factories · FMCG plants) | Engineering students |
+| **Entry point** | Generator monitoring (fuel, load, temperature, vibration) — wedges into full asset registry | Virtual IIoT experiment canvas |
+| **Alert channel** | WhatsApp (owner + role-routed) + live dashboard (ops head) | In-app coaching |
 | **AI** | Groq LLaMA — Urdu / Roman Urdu / English | Same |
-| **Hardware** | ESP32 + DHT22 + MPU6050 | ESP32-based student kits |
-| **Pilot** | HSK Bone Care — generator at orthopedic facility | DUET · NED |
+| **Hardware** | ESP32 + DHT22 + MPU6050 (non-invasive strap-on) | ESP32-based student kits |
+| **Pilots** | HSK Bone Care · Shahruk Shell pumps · **NFL POC ask: PKR 25 lac / 10 assets / 3 months** | DUET · NED |
 
 > **Buyer vs user:** the owner is the buyer — he never opens the dashboard.
 > He receives a WhatsApp. The dashboard is for his ops head or son.
@@ -77,7 +81,7 @@ ESP32 (real hardware)          simulator.py (registry-driven)
                            rule eval             rule eval
                                 │
                          alerts collection
-                         (MongoDB) ──► WhatsApp (Twilio, Phase C)
+                         (MongoDB) ──► WhatsApp (Twilio, role-routed)
                                 │
                          WebSocket push
                                 │
@@ -99,7 +103,7 @@ ESP32 (real hardware)          simulator.py (registry-driven)
 | Document DB | **MongoDB 7.0** (device registry, thresholds, alerts, sim control) |
 | Backend | **FastAPI** (Python) |
 | AI — chat | **Groq** `llama-3.3-70b-versatile` (Urdu / Roman Urdu / English) |
-| Alerts | **Twilio WhatsApp** sandbox — bilingual, rupee-anchored (Phase C) |
+| Alerts | **Twilio WhatsApp** sandbox — bilingual, rupee-anchored, role-routed (Phase G) |
 | Frontend | **React + Vite** (recharts) |
 | Deploy | Docker Compose (dev) |
 
@@ -113,6 +117,7 @@ ESP32 (real hardware)          simulator.py (registry-driven)
 | [`backend/alerts.py`](./backend/alerts.py) | Alert engine — threshold rules, fuel-theft rule, cooldown |
 | [`backend/routers/`](./backend/routers) | `devices` · `readings` · `alerts` · `chat` · `rul` · `ws` |
 | [`frontend/`](./frontend) | React dashboard — live charts, alerts panel, Groq chat FAB |
+| [`sim-control/`](./sim-control) | Simulator control mini-app — generator toggle, base-value sliders, fault injectors |
 | [`phase/`](./phase) | Phase docs — plan → build log → actually achieved |
 | [`phase/MVP_v2_PLAN.md`](./phase/MVP_v2_PLAN.md) | Authoritative v2 spec (read before expanding any phase) |
 | [`phase/limitations.md`](./phase/limitations.md) | Known limitations log |
@@ -146,11 +151,17 @@ cd backend
 cd frontend
 npm run dev
 # → http://localhost:5173
+
+# 6 — Simulator control mini-app (optional — toggle generator, sliders, fault injectors)
+cd sim-control
+npm run dev
+# → http://localhost:5174
 ```
 
 | Service | URL | Credentials |
 | :--- | :--- | :--- |
 | Dashboard | http://localhost:5173 | — |
+| Sim control | http://localhost:5174 | — |
 | API + Swagger | http://localhost:8000/docs | — |
 | InfluxDB UI | http://localhost:8086 | admin / twinlab123 |
 | MongoDB | localhost:27017 | admin / twinlab123 |
@@ -180,9 +191,12 @@ npm run dev
 | :---: | :--- | :--- | :---: |
 | A | [phase-5.md](./phase/phase-5.md) | Registry-driven simulator · device schema (`source`, `thresholds`, `status`) | ✅ |
 | B | [phase-6.md](./phase/phase-6.md) | Threshold alert engine · fuel-theft rule · `alerts` collection | ✅ |
-| C | [phase-7.md](./phase/phase-7.md) | Twilio WhatsApp — bilingual, rupee-anchored | ⬜ |
-| D | [phase-8.md](./phase/phase-8.md) | Simulator control mini-app (`sim-control/`) | ⬜ |
-| E | [phase-9.md](./phase/phase-9.md) | Real ESP32 hardware buffer · brand string cleanup | ⬜ |
+| C | [phase-7.md](./phase/phase-7.md) | Twilio WhatsApp — bilingual, rupee-anchored | ✅ |
+| D | [phase-8.md](./phase/phase-8.md) | Simulator control mini-app (`sim-control/`) | ✅ |
+| E | [phase-9.md](./phase/phase-9.md) | Real ESP32 hardware buffer · brand string cleanup | ⏸ Deferred — hardware skipped for ELXR'26 |
+| F | [phase-10.md](./phase/phase-10.md) | NFL/SCAPM reframe — seed 4 NFL devices · brand kill · SIMULATED badge | ⬜ |
+| G | [phase-11.md](./phase/phase-11.md) | CRM/inventory features — asset registry · consumable auto-reorder · role-based routing | ⬜ |
+| H | [phase-12.md](./phase/phase-12.md) | Demo choreography — manual injector buttons + Demo Reset + screen-recording backup | ⬜ |
 
 ---
 

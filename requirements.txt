@@ -4,7 +4,6 @@ fastapi
 uvicorn[standard]
 motor
 pydantic-settings
-scikit-learn
 numpy
 groq
 twilio

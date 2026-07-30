@@ -1,23 +1,14 @@
 import { useEffect, useState } from 'react'
-
-const BASE = '/api'
+import { getRul } from '../api'
 
 export default function RulCard({ deviceId }) {
   const [data, setData] = useState([])
 
   useEffect(() => {
     if (!deviceId) return
-    fetch(`${BASE}/devices/${deviceId}/rul`)
-      .then(r => r.ok ? r.json() : [])
-      .then(setData)
-      .catch(() => {})
-
-    const id = setInterval(() => {
-      fetch(`${BASE}/devices/${deviceId}/rul`)
-        .then(r => r.ok ? r.json() : [])
-        .then(setData)
-        .catch(() => {})
-    }, 60_000)
+    const load = () => getRul(deviceId).then(setData).catch(() => {})
+    load()
+    const id = setInterval(load, 60_000)
     return () => clearInterval(id)
   }, [deviceId])
 

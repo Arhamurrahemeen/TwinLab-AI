@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { updateThreshold, buildThresholds } from '../threshold-utils'
 
 const BASE = '/api'
 
@@ -21,27 +22,8 @@ export default function RegisterDevice({ onCreated, onClose }) {
     [form.sensors],
   )
 
-  const setThreshold = (sensor, bound, raw) => {
-    setThresholds(prev => ({
-      ...prev,
-      [sensor]: { ...prev[sensor], [bound]: raw },
-    }))
-  }
-
-  const buildThresholds = () => {
-    const result = {}
-    for (const sensor of sensorList) {
-      const t   = thresholds[sensor] ?? {}
-      const min = t.min !== '' && t.min !== undefined ? parseFloat(t.min) : null
-      const max = t.max !== '' && t.max !== undefined ? parseFloat(t.max) : null
-      const minVal = (min !== null && !isNaN(min)) ? min : null
-      const maxVal = (max !== null && !isNaN(max)) ? max : null
-      if (minVal !== null || maxVal !== null) {
-        result[sensor] = { min: minVal, max: maxVal }
-      }
-    }
-    return result
-  }
+  const setThreshold = (sensor, bound, raw) =>
+    setThresholds(prev => updateThreshold(prev, sensor, bound, raw))
 
   const submit = async (e) => {
     e.preventDefault()
@@ -61,7 +43,7 @@ export default function RegisterDevice({ onCreated, onClose }) {
           location:   form.location.trim(),
           sensors:    sensorList,
           source:     form.source,
-          thresholds: buildThresholds(),
+          thresholds: buildThresholds(sensorList, thresholds),
         }),
       })
       if (!res.ok) {
