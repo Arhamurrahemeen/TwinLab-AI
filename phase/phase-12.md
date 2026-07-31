@@ -220,5 +220,31 @@ curl -X POST http://localhost:8000/sim/reset
 - Criterion 12 (Q&A Defense): Demo Reset + benchmarks doc + SIMULATED honesty all give the team more surface area to defend from.
 
 ---
-## ✅ Actually achieved   <!-- append after phase is done -->
-<what shipped / deviations / deferrals / gotchas>
+## ✅ Actually achieved
+
+**Shipped:**
+- `backend/alerts.py` — `reset_state()` clears `_cooldown`, `_fuel_buf`, `_run_hours_mem`, `_last_hr_ts`.
+- `backend/routers/sim.py` — `POST /sim/reset`: calls `reset_state()`, deactivates all injectors + restores `generator_on: true` on every `sim_control` doc (base_values left untouched, per spec), zeroes `run_hours`/`last_run_hours_update` on all devices, purges alerts from the last 30 min. Returns `{"ok": true, "purged_alerts": N}`.
+- `sim-control/src/components/DemoControlPanel.jsx` (new) — 4-button panel: Inject Overheat (`NFL-SITE-GEN-01`), Inject Consumable (`NFL-SITE-COMP-02`), Inject Theft (`NFL-SITE-GEN-01`, red SIMULATED pill), Demo Reset. Wired into `sim-control/src/App.jsx` above the existing per-device controls (which stay as-is — they're still useful for ad-hoc testing beyond the 3 demo devices).
+- `sim-control/src/api.js` — added `getSimCtrl`, `getDevice`, `patchDevice`, `postSimReset`.
+- `phase/rd_benchmarks.md` (new) — real numbers captured this rehearsal (see below).
+- `README.md` — sim-control run instruction now mentions the Demo Control Panel + a short demo run-through blurb; roadmap table's F/G/H status columns corrected to ✅ (were stale ⬜ left over from before those phases shipped).
+
+**Deviations:**
+1. **`DemoControlPanel.jsx` fetches-then-merges before every `PUT /sim/{id}`**, rather than sending a bare partial patch as the phase doc's button pseudocode implies. `PUT /sim/{id}` does a full `replace_one` on the backend (confirmed in `routers/sim.py`), not a partial update — sending only `{inject: {...}}` would have wiped `base_values` and every other injector's state. This mirrors what `DeviceControl.jsx` already does (`merge()` before `putSimCtrl`) — I just hadn't noticed the same requirement applied to the new panel until testing it.
+2. **Inject Consumable uses `threshold − 0.0003`, not `threshold − 0.1`** as phase-12.md's button 2 pseudocode literally specifies. Per the Phase 11 gotcha (carried forward and re-confirmed here): run-hours accrue in real wall-clock time, so `− 0.1` needs ~6 minutes of continuous ticks to cross, which isn't a workable on-stage button. `− 0.0003` crosses on the next `load_current` tick (~1s), confirmed in this rehearsal (`rd_benchmarks.md`).
+3. **Screen recording and hybrid hardware branch not attempted.** Both require a human at a real keyboard/webcam/bench — this session ran the rehearsal headlessly via direct API calls (no browser session, no physical ESP32 on hand). Flagging both as manual follow-ups for Arham before demo day, not silently skipping them.
+
+**Deferred:** hybrid hardware branch (12.6) and screen recording (12.7) — both explicitly require physical presence; see deviation #3. No changes to `rul.py`, Groq chat, schema, or `alerts.py` engine logic beyond the one `reset_state()` helper, per guardrails.
+
+**Gotchas:**
+- **Process-management chaos mid-session** — across this long multi-phase conversation, several background `nohup` launches of `ingestion.py`/`simulator.py`/`uvicorn` had accumulated as duplicates (2× each), and the actual backend serving port 8000 turned out to be an orphaned `multiprocessing.spawn_main` worker (PID 16728) under a parent PID (2104) that no Windows-side tool (`Get-Process`, `taskkill`, even `ps -W`) could directly query — only visible via `Get-CimInstance Win32_Process` cross-referencing `ParentProcessId`. All duplicates were stopped and the stack was restarted once, cleanly, before this rehearsal. **If you see stale/duplicate `python.exe` processes after a long session, use `Get-CimInstance Win32_Process | Where CommandLine -match '...'` rather than trusting `netstat`'s reported PID directly** — it can point at a phantom parent instead of the real worker.
+- Because of the restart above, "continuous uptime" in `rd_benchmarks.md` reflects a fresh process, not a long soak — worth a longer unattended soak test before the actual pitch if time allows.
+
+**Acceptance checks — results:**
+1. ✅ Fresh backend restart → log confirms `"[alerts] run_hours seeded for 6 device(s)"` on startup (Phase 11 rule holds).
+2. ✅ Ran all 3 injector actions via direct API calls (equivalent to clicking each button): overheat fired 3× (1.77s / 2.94s / 3.00s to visible alert), fuel theft fired (1.24s), consumable reorder fired (1.09s, using the `− 0.0003` fix). WhatsApp *routing* resolved correctly each time; actual delivery unverified (Twilio not configured this environment — pre-existing, see `phase/limitations.md`).
+3. ✅ `POST /sim/reset` → re-injected overheat immediately after → new alert fired with a fresh `ts` (~27s after the first), confirming cooldown state is actually cleared, not just the UI.
+4. ✅ 3 reset+inject cycles run back-to-back this rehearsal (see `rd_benchmarks.md` for the 3 reset timings + 3 overheat timings); all succeeded.
+5. Not independently re-tested this phase (browser reload) — Phase 11 already covers seed/state persistence across restarts; no reason to expect regression since this phase only added a reset endpoint and a helper.
+6. Hybrid hardware — out of scope this cycle (no bench access); see deviation #3.

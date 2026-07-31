@@ -152,11 +152,18 @@ cd frontend
 npm run dev
 # → http://localhost:5173
 
-# 6 — Simulator control mini-app (optional — toggle generator, sliders, fault injectors)
+# 6 — Simulator control mini-app (optional — toggle generator, sliders, fault
+# injectors, plus a Demo Control Panel with 3 one-click demo buttons + Demo Reset)
 cd sim-control
 npm run dev
 # → http://localhost:5174
 ```
+
+> **Demo run-through:** open sim-control's **Demo Controls** panel at the top of the
+> page → click **1. Inject Overheat**, **2. Inject Consumable**, **3. Inject Theft**
+> (each targets a fixed NFL demo device from `seed_nfl.py`) and watch alerts land on
+> the dashboard + WhatsApp. Click **Demo Reset** between runs to clear cooldowns,
+> injectors, and run-hours so the next run starts clean.
 
 | Service | URL | Credentials |
 | :--- | :--- | :--- |
@@ -194,9 +201,9 @@ npm run dev
 | C | [phase-7.md](./phase/phase-7.md) | Twilio WhatsApp — bilingual, rupee-anchored | ✅ |
 | D | [phase-8.md](./phase/phase-8.md) | Simulator control mini-app (`sim-control/`) | ✅ |
 | E | [phase-9.md](./phase/phase-9.md) | Real ESP32 hardware buffer · brand string cleanup | ⏸ Deferred — hardware skipped for ELXR'26 |
-| F | [phase-10.md](./phase/phase-10.md) | NFL/SCAPM reframe — seed 4 NFL devices · brand kill · SIMULATED badge | ⬜ |
-| G | [phase-11.md](./phase/phase-11.md) | CRM/inventory features — asset registry · consumable auto-reorder · role-based routing | ⬜ |
-| H | [phase-12.md](./phase/phase-12.md) | Demo choreography — manual injector buttons + Demo Reset + screen-recording backup | ⬜ |
+| F | [phase-10.md](./phase/phase-10.md) | NFL/SCAPM reframe — seed 5 NFL devices · brand kill · SIMULATED badge | ✅ |
+| G | [phase-11.md](./phase/phase-11.md) | CRM/inventory features — asset registry · consumable auto-reorder · role-based routing | ✅ |
+| H | [phase-12.md](./phase/phase-12.md) | Demo choreography — manual injector buttons + Demo Reset + screen-recording backup | ✅ |
 
 ---
 

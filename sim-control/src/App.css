@@ -33,6 +33,53 @@ body {
 .sim-muted { color: #6b7280; font-size: 0.9rem; }
 .sim-error { color: #dc2626; font-size: 0.9rem; }
 
+/* ── Demo Control Panel ──────────────────────────────── */
+.demo-panel {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.demo-panel-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+.demo-panel-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+.demo-btn {
+  background: #2a2a45;
+  color: #fff;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.demo-btn:hover:not(:disabled) { background: #3a3a5a; }
+.demo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.demo-btn--theft { border-color: #dc2626; }
+.demo-btn--reset { margin-left: auto; background: #374151; }
+.demo-simulated-pill {
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.demo-status { font-size: 0.8rem; }
+.demo-status--ok    { color: #4ade80; }
+.demo-status--error { color: #f87171; }
+
 /* ── Device card ─────────────────────────────────────── */
 .device-card {
   background: #fff;

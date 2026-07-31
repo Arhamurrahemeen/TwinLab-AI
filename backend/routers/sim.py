@@ -1,9 +1,10 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
 
+import alerts as alert_engine
 from db.mongo import get_db
 
 router = APIRouter()
@@ -53,6 +54,32 @@ async def list_sim_devices():
         ctrl = await _get_or_create(db, dev["device_id"])
         result.append({**dev, "sim_control": ctrl})
     return result
+
+
+@router.post("/reset")
+async def reset_demo():
+    """Nuke transient demo state so the demo can be re-run cleanly. Idempotent — safe to spam-click."""
+    db = get_db()
+
+    # 1. Reset alert-engine in-memory state (cooldowns, fuel buffer, run-hours)
+    alert_engine.reset_state()
+
+    # 2. Deactivate all injectors on all sim devices, restore generator_on
+    sim_docs = await db.sim_control.find({}).to_list(length=200)
+    for doc in sim_docs:
+        for inj_name in INJECTORS:
+            doc.setdefault("inject", {})[inj_name] = {"active": False, "until_ts": 0}
+        doc["generator_on"] = True
+        await db.sim_control.replace_one({"device_id": doc["device_id"]}, doc)
+
+    # 3. Zero run_hours on all devices (in-memory already cleared by reset_state)
+    await db.devices.update_many({}, {"$set": {"run_hours": 0.0, "last_run_hours_update": None}})
+
+    # 4. Purge alerts from the last 30 min so the panel starts clean for the next run
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+    result = await db.alerts.delete_many({"created_at": {"$gte": cutoff}})
+
+    return {"ok": True, "purged_alerts": result.deleted_count}
 
 
 @router.get("/{device_id}")

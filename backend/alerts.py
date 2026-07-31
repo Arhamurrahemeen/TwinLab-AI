@@ -103,6 +103,18 @@ def set_run_hours(device_id: str, hours: float) -> None:
     _last_hr_ts.pop(device_id, None)
 
 
+def reset_state() -> None:
+    """
+    Clear all in-memory demo state. Called by POST /sim/reset.
+    Does NOT touch _threshold_cache / _run_hours_threshold_cache (config, not demo state).
+    """
+    _cooldown.clear()
+    _fuel_buf.clear()
+    _run_hours_mem.clear()
+    _last_hr_ts.clear()
+    log.info("[alerts] state reset — cooldowns/fuel_buf/run_hours cleared")
+
+
 # ── Helpers ──────────────────────────────────────────────────
 
 def _severity(sensor: str, side: str) -> str:
