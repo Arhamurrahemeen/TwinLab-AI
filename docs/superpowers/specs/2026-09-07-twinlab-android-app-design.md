@@ -89,8 +89,9 @@ Role-based alert routing (owner / maintenance head / vendor / supply-chain lead)
 |---|---|
 | `backend/whatsapp.py` | delete |
 | `backend/config.py` | remove `twilio_account_sid`, `twilio_auth_token`, `twilio_channel`, `twilio_whatsapp_from`, `twilio_sms_from`, `alert_whatsapp_to`; add `fcm_credentials_file: str = ""` |
-| `backend/main.py` | remove `import whatsapp`; in `_persist_alert`, replace the whatsapp executor block with the push executor block; rename `whatsapp_sent`→`push_sent`, `routed_to`→`pushed_to` |
+| `backend/main.py` | remove `import whatsapp`; in `_persist_alert`, replace the whatsapp executor block with the push executor block; set `push_sent: bool`; drop `routed_to` (broadcast push has no routing info) |
 | `backend/alerts.py` | `_make_alert`: `"whatsapp_sent": False` → `"push_sent": False` |
+| `frontend/src/components/AlertsPanel.jsx` | replace the `a.routed_to` "Sent to:" block with a `a.push_sent` "📲 Pushed" badge |
 | `requirements.txt` | remove `twilio`; add `firebase-admin` |
 | `backend/.env` / `.env.example` | remove `TWILIO_*`, `ALERT_WHATSAPP_TO`; add `FCM_CREDENTIALS_FILE` |
 | `.gitignore` | add `backend/fcm-service-account.json` |
