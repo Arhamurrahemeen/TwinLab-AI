@@ -15,9 +15,11 @@ Two tracks, one spec because they share the alert path:
 
 The Android app reaches the existing FastAPI + WebSocket backend over the LAN; its base URL is entered in an app Settings screen. Alerts reach the phone via Firebase Cloud Messaging (FCM).
 
-### Positioning note (non-blocking)
+### Positioning note
 
-`Obsidian Vault/Hackathons/TwinLab/TwinLab_Identity.md` §5–§7 and `CLAUDE.md` §1 currently make "Roman Urdu WhatsApp is the first-class buyer surface" a load-bearing pitch claim. This change replaces that surface with an Android app + push. The identity doc and CLAUDE.md must be updated to match (the app becomes the buyer surface; the owner now installs it). That documentation update is part of this work.
+**Deliberate pitch decision (Arham, 2026-09-07):** the buyer surface shifts from "Roman Urdu WhatsApp" to **TwinLab's own app — notifications + monitoring**. `Obsidian Vault/Hackathons/TwinLab/TwinLab_Identity.md` §5–§7 and `CLAUDE.md` §1 (which still say the owner "receives WhatsApp alerts only") must be updated to match: the app is the buyer surface, the owner installs it. That documentation update is part of this work.
+
+Role-based alert routing (owner / maintenance head / vendor / supply-chain lead) is a **future feature**, not v1 — v1 push is broadcast to every registered device.
 
 ---
 
