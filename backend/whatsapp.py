@@ -26,7 +26,9 @@ def send_alert(alert: dict, device: dict) -> dict:
     Returns {"sent": [roles...], "failed": [{"role", "error"}...]}. Never raises.
     """
     results = {"sent": [], "failed": []}
-    if not settings.twilio_account_sid:
+    sms_mode  = settings.twilio_channel == "sms"
+    from_num  = settings.twilio_sms_from if sms_mode else settings.twilio_whatsapp_from
+    if not settings.twilio_account_sid or not from_num:
         log.info("[WHATSAPP] not configured — skipping")
         return results
 
@@ -51,15 +53,16 @@ def send_alert(alert: dict, device: dict) -> dict:
 
     for c in contacts:
         try:
+            to = c["whatsapp"].removeprefix("whatsapp:") if sms_mode else c["whatsapp"]
             client.messages.create(
-                from_=settings.twilio_whatsapp_from,
-                to=c["whatsapp"],
+                from_=from_num,
+                to=to,
                 body=f"[→ {c['role']}: {c.get('name', c['role'])}]\n\n{body}",
             )
             log.info(f"[WHATSAPP OK] {alert['device_id']} / {alert['alert_type']} -> {c['role']}")
             results["sent"].append(c["role"])
         except Exception as e:
-            log.error(f"[WHATSAPP ERROR] {c['role']}/{c.get('whatsapp')}: {e}")
+            log.error(f"[WHATSAPP ERROR] ({'sms' if sms_mode else 'whatsapp'}) {c['role']}/{to}: {e}")
             results["failed"].append({"role": c["role"], "error": str(e)})
 
     return results

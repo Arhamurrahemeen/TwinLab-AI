@@ -62,7 +62,9 @@ def _get_sim_ctrl(sim_col, device_id: str) -> dict:
 def _compute_values(device_id: str, sensors: list, ctrl: dict, t: int) -> dict | None:
     """
     Compute {sensor: (value, unit)} for all sensors using the sim_control doc.
-    Returns None if the device is in offline-injection mode (stop publishing).
+    Returns None if the device should not publish this tick: offline-injection,
+    or generator_on is False (unless a fuel-theft injection is in progress,
+    which needs fuel_level readings to keep flowing so the theft rule can fire).
     """
     gen_on   = ctrl.get("generator_on", True)
     base     = ctrl.get("base_values", {})
@@ -72,6 +74,8 @@ def _compute_values(device_id: str, sensors: list, ctrl: dict, t: int) -> dict |
     offline  = _injector_active(ctrl, "offline")
 
     if offline:
+        return None
+    if not gen_on and not theft:
         return None
 
     values = {}
@@ -112,8 +116,6 @@ def _compute_values(device_id: str, sensors: list, ctrl: dict, t: int) -> dict |
                 val = round(95.0 + random.uniform(0, 5), 2)
             else:
                 base_temp = base.get("temperature", 35.0)
-                if gen_on:
-                    base_temp += 5.0
                 val = round(base_temp + random.uniform(-1, 1), 2)
             values[sensor] = (val, "C")
 
@@ -147,46 +149,50 @@ def _log_devices(devices):
         print(f"[SIM] Tracking '{d['device_id']}' -> sensors: {d.get('sensors', [])}")
 
 
-# ── Connect ──────────────────────────────────────────────────
-mqtt_client = mqtt.Client()
-mqtt_client.connect(MQTT_HOST, MQTT_PORT)
-mqtt_client.loop_start()
+def main():
+    mqtt_client = mqtt.Client()
+    mqtt_client.connect(MQTT_HOST, MQTT_PORT)
+    mqtt_client.loop_start()
 
-mongo   = pymongo.MongoClient(MONGO_URI)
-col     = mongo[MONGO_DB]["devices"]
-sim_col = mongo[MONGO_DB]["sim_control"]
+    mongo   = pymongo.MongoClient(MONGO_URI)
+    col     = mongo[MONGO_DB]["devices"]
+    sim_col = mongo[MONGO_DB]["sim_control"]
 
-print("[TwinLab Simulator] Starting — registry-driven + sim_control mode")
-devices      = _load_devices(col)
-last_refresh = time.time()
-_log_devices(devices)
+    print("[TwinLab Simulator] Starting — registry-driven + sim_control mode")
+    devices      = _load_devices(col)
+    last_refresh = time.time()
+    _log_devices(devices)
 
-t = 0
-while True:
-    # Reload device list on schedule
-    if time.time() - last_refresh >= REFRESH_S:
-        fresh = _load_devices(col)
-        if fresh != devices:
-            devices = fresh
-            print(f"[SIM] Registry refreshed — {len(devices)} active simulator device(s)")
-            _log_devices(devices)
-        last_refresh = time.time()
+    t = 0
+    while True:
+        # Reload device list on schedule
+        if time.time() - last_refresh >= REFRESH_S:
+            fresh = _load_devices(col)
+            if fresh != devices:
+                devices = fresh
+                print(f"[SIM] Registry refreshed — {len(devices)} active simulator device(s)")
+                _log_devices(devices)
+            last_refresh = time.time()
 
-    # Publish one reading per sensor per device
-    for device in devices:
-        device_id = device["device_id"]
-        ctrl      = _get_sim_ctrl(sim_col, device_id)
-        values    = _compute_values(device_id, device.get("sensors", []), ctrl, t)
+        # Publish one reading per sensor per device
+        for device in devices:
+            device_id = device["device_id"]
+            ctrl      = _get_sim_ctrl(sim_col, device_id)
+            values    = _compute_values(device_id, device.get("sensors", []), ctrl, t)
 
-        if values is None:
-            print(f"[SIM-CTRL] {device_id} is OFFLINE — skipping publish")
-            continue
+            if values is None:
+                print(f"[SIM-CTRL] {device_id} not publishing (offline or generator off) — skipping")
+                continue
 
-        for sensor, (value, unit) in values.items():
-            topic   = f"twinlab/device/{device_id}/sensor/{sensor}"
-            payload = json.dumps({"value": value, "unit": unit, "ts": int(time.time() * 1000)})
-            mqtt_client.publish(topic, payload)
-            print(f"[SIM] {topic} -> {value} {unit}")
+            for sensor, (value, unit) in values.items():
+                topic   = f"twinlab/device/{device_id}/sensor/{sensor}"
+                payload = json.dumps({"value": value, "unit": unit, "ts": int(time.time() * 1000)})
+                mqtt_client.publish(topic, payload)
+                print(f"[SIM] {topic} -> {value} {unit}")
 
-    t += 1
-    time.sleep(1)
+        t += 1
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    main()

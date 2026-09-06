@@ -46,3 +46,17 @@ ALERT_WHATSAPP_TO=whatsapp:+92xxxxxxxxx
 Restart uvicorn after any `.env` change. Re-test once the daily 5-message limit resets.
 
 ---
+
+### Error 63038 — "Account exceeded the 5 daily messages limit"
+
+**Status:** ⬜ Open (found 2026-07-31)
+
+**Symptom:** `.env` credentials verified correct (SID/token/`whatsapp:` prefixes all valid, contacts fallback routing works), but `whatsapp_sent` stays `False` on every alert. Direct Twilio API test confirms `TwilioRestException(429, ..., 63038, ...)`.
+
+**Root cause:** Twilio **trial account** hard cap — 5 WhatsApp messages/day total, separate from the sandbox join-code mechanism. Each backend restart re-fires seeded threshold/fuel-theft alerts, burning the quota almost immediately.
+
+**Fix:** No code change. Either wait ~24h for reset, or upgrade the Twilio account (add billing) — required before any live demo/pitch regardless, since 5/day won't survive a real walkthrough.
+
+**Note (2026-07-31):** Added `TWILIO_CHANNEL` toggle (`backend/config.py`, `backend/whatsapp.py`) to switch alert delivery between WhatsApp and plain SMS (`TWILIO_SMS_FROM=+17166213458`, an SMS-capable number already on the account). Confirmed via direct API test that **the 5/day cap is account-wide across all channels**, not WhatsApp-specific — switching to SMS does not bypass it. Only a real fix (billing upgrade) or the daily reset clears this.
+
+---

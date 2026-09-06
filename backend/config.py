@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
+    twilio_channel: str = "whatsapp"   # "whatsapp" or "sms"
     twilio_whatsapp_from: str = ""
+    twilio_sms_from: str = ""
     alert_whatsapp_to: str = ""
     diesel_price_pkr: float = 280.0
 
