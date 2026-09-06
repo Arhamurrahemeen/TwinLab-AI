@@ -27,7 +27,7 @@
 
 | Layer | Choice |
 |---|---|
-| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration). Firmware lives in `firmware/twinlab_node_v1/`. **No fuel sensor, no CT clamp owned yet** — fuel-theft and load-current stay simulator-only until those parts are bought. |
+| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration). Firmware is **ESP-IDF 6.x** (`idf.py`), lives in `firmware/twinlab_node_v1/`. Publishes `temperature`, `humidity`, `accel_x/y/z`, `vibration` on the MQTT contract as device `TL-01` via a hand-rolled publish-only MQTT-over-TCP client (no esp-mqtt dependency). **No fuel sensor, no CT clamp owned yet** — fuel-theft and load-current stay simulator-only until those parts are bought. |
 | Messaging | MQTT via **Mosquitto** |
 | Time-series DB | **InfluxDB 2.7** (sensor readings) |
 | Document DB | **MongoDB 7.0** (device registry, thresholds, alerts, sim control) |
@@ -64,17 +64,18 @@ cd sim-control && npm run dev                           # sim control mini-app (
 
 > ESP32 note: `MQTT_HOST` in firmware must be the laptop's **LAN IP**, never `localhost`.
 
-### Firmware — compile & flash (`firmware/twinlab_node_v1/`)
+### Firmware — build & flash (`firmware/twinlab_node_v1/`, ESP-IDF 6.x)
 
 ```powershell
-arduino-cli compile --fqbn esp32:esp32:esp32 firmware\twinlab_node_v1
-arduino-cli upload -p COM<N> --fqbn esp32:esp32:esp32 firmware\twinlab_node_v1
-arduino-cli monitor -p COM<N> -c baudrate=115200
+# from an ESP-IDF shell, cwd firmware\twinlab_node_v1\
+idf.py set-target esp32
+idf.py build
+idf.py -p COM<N> flash monitor
 ```
 
-Replace `COM<N>` with the port Device Manager assigns on connect. Required libraries (install once via `arduino-cli lib install`): `PubSubClient`, `Adafruit MPU6050`, `Adafruit Unified Sensor`, `DHT sensor library`, `ArduinoJson`.
+Replace `COM<N>` with the port Device Manager assigns on connect. No external components or managed dependencies — I2C/GPIO drivers, WiFi, and lwip sockets are all in-tree; MQTT is a small hand-rolled publish-only client in `main.c` (esp-mqtt isn't populated in every IDF 6.0 install).
 
-`Config.h` is gitignored — copy `Config.h.example` and fill in `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_HOST` (laptop LAN IP), `DEVICE_ID`.
+`main/secrets.h` is gitignored — copy `main/secrets.h.example` and fill in `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_HOST` (laptop LAN IP), `MQTT_PORT`, `DEVICE_ID`. `build/`, `sdkconfig`, `sdkconfig.old` are gitignored (machine-generated).
 
 ---
 
@@ -113,9 +114,9 @@ This contract is the seam that makes the system **source-agnostic**: simulator a
 - Don't add Kubernetes / Helm / Terraform.
 - Don't write a test suite yet.
 - Don't rename the GitHub repo (`TwinLab-AI`) — it breaks remotes. Fix the **product name in code/UI strings** to "TwinLab" instead.
-- Don't commit `backend/.env` or firmware `Config.h` (both gitignored, both hold credentials).
+- Don't commit `backend/.env` or firmware `main/secrets.h` (both gitignored, both hold credentials).
 - Don't change the MQTT topic contract.
-- **Don't expand Phase E's sensor set beyond what `phase-9.md` scopes** (temperature, humidity, accel_x/y/z as raw passthrough). Run/stop detection, software hour meter, and a vibration-RMS alert rule were discussed but are explicitly **not** in this phase — they need their own phase doc and a decision from Arham first.
+- **Don't expand the hardware node's sensor set beyond what `phase-13.md` scopes** (temperature, humidity, accel_x/y/z, and `vibration` — all raw passthrough values). `vibration` has **no alert rule**. Run/stop detection, software hour meter, and a vibration-RMS alert rule were discussed but are explicitly **not** in scope — they need their own phase doc and a decision from Arham first.
 - Don't claim fuel-theft or overload detection works on real hardware. No fuel sensor or CT clamp is owned yet — those rules stay simulator-only until the parts exist.
 
 ---
@@ -171,10 +172,11 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | B | `phase/phase-6.md` | Generator sensors (`fuel_level`, `load_current`) + threshold alert engine + fuel-theft rule | ✅ |
 | C | `phase/phase-7.md` | Twilio WhatsApp on the alert path (sandbox), bilingual + rupee-anchored | ✅ |
 | D | `phase/phase-8.md` | Simulator control mini-app + `sim_control` collection | ✅ |
-| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors, raw passthrough only) + brand string fixes | ⏸ **Deferred** — hardware skipped for ELXR'26; brand-string fix absorbed into Phase F |
+| E | `phase/phase-9.md` | Hardware buffer (ESP32 real sensors, raw passthrough only) + brand string fixes | ⏸ **Deferred for ELXR'26**, then revived — see Phase 13 |
 | F | `phase/phase-10.md` | NFL/SCAPM reframe: seed 4 NFL devices, brand-string kill, SIMULATED badge | ✅ |
 | G | `phase/phase-11.md` | Three CRM/inventory features: asset registry (warranty/vendor), consumable auto-reorder (`run_hours`), role-based WhatsApp routing | ✅ |
 | H | `phase/phase-12.md` | Demo choreography: manual injector buttons + `Demo Reset` + screen-recording backup | ✅ |
+| 13 | `phase/phase-13.md` | Hardware node: tested ESP-IDF firmware (MPU6050 + DHT22) merged into the pipeline as `TL-01`, WiFi-STA + MQTT on the locked contract. Supersedes Phase E. | ✅ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).
 
@@ -198,4 +200,4 @@ Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
 
 ---
 
-*Last updated: start of Phase F (NFL/SCAPM reframe) for ELXR'26. Phase E hardware buffer deferred — no ESP32 firmware work this hackathon; MQTT contract stays untouched so ESP32 can rejoin later. Reframe scope: NFL-flavored seed devices, SIMULATED badge (theft alert shown as simulator-only), brand-string cleanup absorbed from Phase E, three CRM/inventory features (asset registry, consumable auto-reorder, role-based WhatsApp routing), demo choreography (manual injector buttons + Demo Reset). Non-invasive install narrative and generator-first wedge preserved; Groq-only, Isolation Forest still parked.*
+*Last updated: Phase 13 (hardware node) for the BanoQabil / Alibaba Cloud hackathon. The bench-tested ESP-IDF firmware (MPU6050 + DHT22) is now the repo firmware at `firmware/twinlab_node_v1/` — WiFi-station + SNTP + a hand-rolled publish-only MQTT-over-TCP client (esp-mqtt isn't populated in every IDF 6.0 install), publishing `temperature`, `humidity`, `accel_x/y/z`, `vibration` as device `TL-01` on the locked MQTT contract. The old untested Arduino scaffold is deleted; firmware framework is ESP-IDF 6.x (`idf.py`). Backend/frontend unchanged — the pipeline was already source-agnostic. `vibration` is a raw passthrough value only, no alert rule. Groq-only, Isolation Forest still parked; non-invasive install narrative and generator-first wedge preserved.*
