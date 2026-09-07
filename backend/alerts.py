@@ -169,7 +169,7 @@ def _make_alert(
         "drop_litres":   drop_litres,
         "window_s":      window_s,
         "ts":            ts,
-        "whatsapp_sent": False,
+        "push_sent":     False,
         "created_at":    datetime.now(timezone.utc),
     }
 

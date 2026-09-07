@@ -11,7 +11,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import alerts as alert_engine
-import whatsapp
 from config import settings
 from db.influx import close_influx
 from db.mongo import close_mongo, connect_mongo, get_db
@@ -79,7 +78,7 @@ async def _persist_alert(alert: dict) -> None:
     try:
         db = get_db()
 
-        # Resolve full device doc — routing (contacts) + WhatsApp body need more than just name
+        # Resolve full device doc — push body wants the display name / vendor
         device_doc = await db.devices.find_one({"device_id": alert["device_id"]}, {"_id": 0}) or {}
 
         if alert["alert_type"] == "consumable_reorder":
@@ -94,14 +93,6 @@ async def _persist_alert(alert: dict) -> None:
             f"[ALERT] {alert['alert_type']} {alert['severity']} — "
             f"{alert['device_id']}/{alert['sensor']} — {alert['detail']}"
         )
-
-        # Send WhatsApp in a thread (Twilio SDK is sync)
-        loop    = asyncio.get_running_loop()
-        routing = await loop.run_in_executor(None, whatsapp.send_alert, alert, device_doc)
-        update  = {"whatsapp_sent": bool(routing["sent"])}
-        if routing["sent"]:
-            update["routed_to"] = routing["sent"]
-        await db.alerts.update_one({"_id": result.inserted_id}, {"$set": update})
     except Exception as e:
         log.error(f"[ALERT] persist failed: {e}")
 

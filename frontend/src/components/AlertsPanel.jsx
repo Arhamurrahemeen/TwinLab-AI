@@ -72,8 +72,8 @@ export default function AlertsPanel({ device, liveMessages = [] }) {
             {' '}<span className="alert-unit">{a.unit}</span>
           </span>
           {a.detail && <span className="alert-detail">{a.detail}</span>}
-          {a.routed_to?.length > 0 && (
-            <span className="alert-routed-to">Sent to: {a.routed_to.join(', ')}</span>
+          {a.push_sent && (
+            <span className="alert-routed-to">📲 Pushed</span>
           )}
           <span className="alert-ts">{new Date(a.ts).toLocaleTimeString()}</span>
         </div>

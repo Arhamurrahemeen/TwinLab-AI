@@ -6,4 +6,4 @@ motor
 pydantic-settings
 numpy
 groq
-twilio
+firebase-admin

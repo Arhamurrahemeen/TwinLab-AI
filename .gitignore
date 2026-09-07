@@ -8,7 +8,19 @@ __pycache__/
 
 # Environment — contains credentials, never commit
 backend/.env
+backend/fcm-service-account.json
 firmware/twinlab_node_v1/main/secrets.h
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/app/google-services.json
+android/app/release/
+android/captures/
+*.keystore
 
 # ESP-IDF build output + generated config
 firmware/twinlab_node_v1/build/
