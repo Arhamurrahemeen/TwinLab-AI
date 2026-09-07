@@ -23,6 +23,7 @@ data class Device(
     val group: String get() = plant?.takeIf { it.isNotBlank() } ?: location.ifBlank { "Unassigned" }
 }
 
+/** Live reading (WebSocket broadcast) and last-known map values — `ts` is epoch ms. */
 @Serializable
 data class Reading(
     val device_id: String = "",
@@ -30,6 +31,19 @@ data class Reading(
     val value: Double,
     val unit: String = "",
     val ts: Long = 0,
+)
+
+/**
+ * A point from `GET /devices/{id}/readings` (InfluxDB history). That endpoint
+ * serialises `ts` as an ISO-8601 string, unlike the live [Reading] feed, so it
+ * gets its own type. Sparklines only need `value`.
+ */
+@Serializable
+data class HistoryPoint(
+    val value: Double,
+    val unit: String = "",
+    val sensor: String = "",
+    val ts: String = "",
 )
 
 @Serializable

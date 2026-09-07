@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,6 +19,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.omnitex.twinlab.ui.Routes
+import com.omnitex.twinlab.ui.alerts.AlertsScreen
+import com.omnitex.twinlab.ui.alerts.AlertsViewModel
+import com.omnitex.twinlab.ui.assets.AssetListScreen
+import com.omnitex.twinlab.ui.assets.AssetListViewModel
 import com.omnitex.twinlab.ui.settings.SettingsScreen
 import com.omnitex.twinlab.ui.settings.SettingsViewModel
 
@@ -44,42 +47,44 @@ private fun AppRoot(hasBackend: Boolean, container: AppContainer) {
     val nav = rememberNavController()
     val start = if (hasBackend) Routes.ASSETS else Routes.SETTINGS
 
-    Scaffold { pad ->
-        NavHost(
-            navController = nav,
-            startDestination = start,
-            modifier = Modifier.padding(pad),
-        ) {
-            composable(Routes.SETTINGS) {
-                val vm: SettingsViewModel = viewModel(factory = container.factory)
-                SettingsScreen(
-                    vm = vm,
-                    onSaved = {
-                        nav.navigate(Routes.ASSETS) {
-                            popUpTo(Routes.SETTINGS) { inclusive = true }
-                        }
-                    },
-                    canGoBack = hasBackend,
-                    onBack = { nav.popBackStack() },
-                )
-            }
-            // Task 7 replaces this placeholder with AssetListScreen.
-            composable(Routes.ASSETS) {
-                Placeholder("assets — Task 7", onGoSettings = { nav.navigate(Routes.SETTINGS) })
-            }
-            composable(Routes.ALERTS) { Placeholder("alerts — Task 7") }
-            composable(Routes.DETAIL) { Placeholder("detail — Task 8") }
-        }
-    }
-}
+    NavHost(navController = nav, startDestination = start) {
 
-@Composable
-private fun Placeholder(label: String, onGoSettings: (() -> Unit)? = null) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (onGoSettings != null) {
-            androidx.compose.material3.TextButton(onClick = onGoSettings) { Text("$label · open Settings") }
-        } else {
-            Text(label, style = MaterialTheme.typography.headlineSmall)
+        composable(Routes.SETTINGS) {
+            val vm: SettingsViewModel = viewModel(factory = container.factory)
+            SettingsScreen(
+                vm = vm,
+                onSaved = {
+                    nav.navigate(Routes.ASSETS) { popUpTo(Routes.SETTINGS) { inclusive = true } }
+                },
+                canGoBack = hasBackend,
+                onBack = { nav.popBackStack() },
+            )
+        }
+
+        composable(Routes.ASSETS) {
+            val vm: AssetListViewModel = viewModel(factory = container.factory)
+            AssetListScreen(
+                vm = vm,
+                onOpen = { id -> nav.navigate(Routes.detail(id)) },
+                onAlerts = { nav.navigate(Routes.ALERTS) },
+                onSettings = { nav.navigate(Routes.SETTINGS) },
+            )
+        }
+
+        composable(Routes.ALERTS) {
+            val vm: AlertsViewModel = viewModel(factory = container.factory)
+            AlertsScreen(
+                vm = vm,
+                onOpen = { id -> nav.navigate(Routes.detail(id)) },
+                onBack = { nav.popBackStack() },
+            )
+        }
+
+        // Task 8 replaces this placeholder with AssetDetailScreen.
+        composable(Routes.DETAIL) {
+            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text("asset detail — Task 8", style = MaterialTheme.typography.headlineSmall)
+            }
         }
     }
 }
