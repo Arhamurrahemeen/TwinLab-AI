@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 import alerts as alert_engine
@@ -155,3 +155,27 @@ async def health():
 @app.get("/devices/{device_id}/last-known", tags=["system"])
 async def last_known(device_id: str):
     return _last_known.get(device_id, {})
+
+
+@app.get("/alerts", tags=["alerts"])
+async def all_alerts(limit: int = 50, since: str | None = None):
+    """Global alert feed across all devices, newest first."""
+    db = get_db()
+    query: dict = {}
+    if since:
+        try:
+            query["created_at"] = {"$gte": datetime.fromisoformat(since.replace("Z", "+00:00"))}
+        except ValueError:
+            raise HTTPException(400, "Invalid 'since' timestamp — use ISO 8601")
+
+    limit = max(1, min(limit, 200))
+    docs = (
+        await db.alerts.find(query, {"_id": 0})
+        .sort("created_at", -1)
+        .limit(limit)
+        .to_list(length=limit)
+    )
+    for d in docs:
+        if hasattr(d.get("created_at"), "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+    return docs
