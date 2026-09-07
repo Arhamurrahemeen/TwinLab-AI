@@ -31,14 +31,20 @@ Package `com.omnitex.twinlab` · minSdk 24 · targetSdk 35.
 
 Push is coded but dormant until you add Firebase:
 
+The `firebase-messaging` dependency, the `TwinLabMessagingService`, the manifest
+`<service>`, the notification channel and the token-registration call are all
+already in place. Only two things are missing:
+
 1. console.firebase.google.com → new project (Spark/free).
 2. Add Android app, package `com.omnitex.twinlab` → download
    `google-services.json` → drop it in `android/app/` (gitignored).
-3. Uncomment the `com.google.gms.google-services` plugin lines in
-   `build.gradle.kts` (root) and `app/build.gradle.kts`, and the `<service>`
-   block in `AndroidManifest.xml`.
+3. Uncomment the single `com.google.gms.google-services` line in **both**
+   `build.gradle.kts` (root) and `app/build.gradle.kts`. Sync.
 4. Project Settings → Service Accounts → generate a private key →
    save on the backend machine → set `FCM_CREDENTIALS_FILE` in `backend/.env`.
+
+Until step 3 is done the app builds and runs fine — FCM is simply inert
+(`FirebaseMessaging.getInstance()` calls are wrapped in `runCatching`).
 
 ## Layout
 

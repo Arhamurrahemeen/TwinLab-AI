@@ -64,6 +64,12 @@ dependencies {
 
     implementation("io.github.sceneview:sceneview:2.2.1")
 
+    // Firebase Cloud Messaging. The AARs are harmless without google-services.json;
+    // push actually works once Arham adds the JSON and uncomments the
+    // `com.google.gms.google-services` plugin (this file + the root build file).
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
+    implementation("com.google.firebase:firebase-messaging")
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
