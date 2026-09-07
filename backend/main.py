@@ -16,6 +16,7 @@ from db.influx import close_influx
 from db.mongo import close_mongo, connect_mongo, get_db
 from routers import devices, readings, ws, chat, rul, sim as sim_router
 from routers import alerts as alerts_router
+from routers import push as push_router
 from routers.ws import manager
 
 logging.basicConfig(
@@ -145,6 +146,7 @@ app.include_router(rul.router,           prefix="/devices", tags=["rul"])
 app.include_router(sim_router.router,    prefix="/sim",     tags=["sim-control"])
 app.include_router(chat.router,          tags=["chat"])
 app.include_router(ws.router,            tags=["websocket"])
+app.include_router(push_router.router,   prefix="/push",    tags=["push"])
 
 
 @app.get("/health", tags=["system"])
