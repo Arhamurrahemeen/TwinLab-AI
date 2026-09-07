@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple "TL" mark, centred in the 72dp safe zone. -->
+    <group android:translateX="18" android:translateY="30">
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M6,6 L36,6 L36,14 L27,14 L27,46 L15,46 L15,14 L6,14 Z" />
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M44,6 L56,6 L56,38 L74,38 L74,46 L44,46 Z" />
+    </group>
+</vector>

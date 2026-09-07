@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose supplies the real theming (Material 3). This is just the
+         window/system-bar shell before the first frame. -->
+    <style name="Theme.TwinLab" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/tl_primary</item>
+        <item name="android:windowBackground">@color/tl_background</item>
+    </style>
+</resources>
