@@ -62,8 +62,6 @@ dependencies {
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    implementation("io.github.sceneview:sceneview:2.2.1")
-
     // Firebase Cloud Messaging. The AARs are harmless without google-services.json;
     // push actually works once Arham adds the JSON and uncomments the
     // `com.google.gms.google-services` plugin (this file + the root build file).

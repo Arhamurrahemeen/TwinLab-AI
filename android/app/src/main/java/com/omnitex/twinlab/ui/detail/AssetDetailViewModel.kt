@@ -9,11 +9,16 @@ import com.omnitex.twinlab.data.HistoryPoint
 import com.omnitex.twinlab.data.TwinLabApi
 import com.omnitex.twinlab.data.WsMessage
 import com.omnitex.twinlab.domain.Health
+import com.omnitex.twinlab.domain.TwinMapping
+import com.omnitex.twinlab.domain.TwinState
 import com.omnitex.twinlab.domain.healthStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -36,6 +41,16 @@ class AssetDetailViewModel(
 
     private val _state = MutableStateFlow(DetailUiState())
     val state: StateFlow<DetailUiState> = _state.asStateFlow()
+
+    val twin: StateFlow<TwinState> = _state
+        .map { s ->
+            TwinMapping.stateFrom(s.readings, s.device?.thresholds ?: emptyMap(), s.lastMsgAgeMs)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            TwinMapping.stateFrom(emptyMap(), emptyMap(), Long.MAX_VALUE),
+        )
 
     private var lastMsgAt: Long = 0L
 

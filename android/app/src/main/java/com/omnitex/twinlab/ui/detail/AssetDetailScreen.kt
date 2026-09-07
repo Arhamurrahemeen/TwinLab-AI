@@ -38,6 +38,7 @@ private const val SIGNAL_LOST_MS = 15_000L
 @Composable
 fun AssetDetailScreen(vm: AssetDetailViewModel, onBack: () -> Unit) {
     val s by vm.state.collectAsStateWithLifecycle()
+    val twin by vm.twin.collectAsStateWithLifecycle()
     val title = s.device?.name ?: "Asset"
 
     Scaffold(
@@ -58,17 +59,7 @@ fun AssetDetailScreen(vm: AssetDetailViewModel, onBack: () -> Unit) {
                 .padding(pad)
                 .padding(horizontal = 16.dp),
         ) {
-            item {
-                // Task 10 replaces this with TwinView(twinState).
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.4f)
-                        .padding(vertical = 12.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) { Text("3D twin — Task 10", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
+            item { TwinView(twin) }
 
             item {
                 val signalLost = s.lastMsgAgeMs > SIGNAL_LOST_MS
