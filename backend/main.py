@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 import alerts as alert_engine
+import push
 from config import settings
 from db.influx import close_influx
 from db.mongo import close_mongo, connect_mongo, get_db
@@ -94,6 +95,20 @@ async def _persist_alert(alert: dict) -> None:
             f"[ALERT] {alert['alert_type']} {alert['severity']} — "
             f"{alert['device_id']}/{alert['sensor']} — {alert['detail']}"
         )
+
+        # Push via FCM in a thread (firebase-admin is sync)
+        tokens = [
+            t["token"] for t in
+            await db.push_tokens.find({}, {"_id": 0, "token": 1}).to_list(length=500)
+        ]
+        if tokens:
+            loop = asyncio.get_running_loop()
+            res  = await loop.run_in_executor(None, push.send_alert, alert, device_doc, tokens)
+            await db.alerts.update_one(
+                {"_id": result.inserted_id}, {"$set": {"push_sent": res["sent"] > 0}}
+            )
+            if res["invalid"]:
+                await db.push_tokens.delete_many({"token": {"$in": res["invalid"]}})
     except Exception as e:
         log.error(f"[ALERT] persist failed: {e}")
 
