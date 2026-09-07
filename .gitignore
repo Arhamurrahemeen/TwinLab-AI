@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 *.egg-info/
 .claude
+.idea/
 
 # Environment — contains credentials, never commit
 backend/.env
