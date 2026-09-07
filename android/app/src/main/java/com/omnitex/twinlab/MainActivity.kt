@@ -23,6 +23,8 @@ import com.omnitex.twinlab.ui.alerts.AlertsScreen
 import com.omnitex.twinlab.ui.alerts.AlertsViewModel
 import com.omnitex.twinlab.ui.assets.AssetListScreen
 import com.omnitex.twinlab.ui.assets.AssetListViewModel
+import com.omnitex.twinlab.ui.detail.AssetDetailScreen
+import com.omnitex.twinlab.ui.detail.AssetDetailViewModel
 import com.omnitex.twinlab.ui.settings.SettingsScreen
 import com.omnitex.twinlab.ui.settings.SettingsViewModel
 
@@ -80,10 +82,14 @@ private fun AppRoot(hasBackend: Boolean, container: AppContainer) {
             )
         }
 
-        // Task 8 replaces this placeholder with AssetDetailScreen.
-        composable(Routes.DETAIL) {
-            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text("asset detail — Task 8", style = MaterialTheme.typography.headlineSmall)
+        composable(Routes.DETAIL) { entry ->
+            val deviceId = entry.arguments?.getString("deviceId")
+            if (deviceId == null) {
+                nav.popBackStack()
+            } else {
+                val vm: AssetDetailViewModel =
+                    viewModel(factory = container.detailFactory(deviceId))
+                AssetDetailScreen(vm = vm, onBack = { nav.popBackStack() })
             }
         }
     }
