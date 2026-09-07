@@ -30,9 +30,14 @@
 
 ## Phase C — Twilio WhatsApp
 
+> **⛔ OBSOLETE as of Phase 14.** Twilio/WhatsApp was removed entirely — the alert
+> transport is now Firebase Cloud Messaging push to the TwinLab Android app
+> (`backend/push.py`). The two errors below died with `whatsapp.py`; kept here for
+> history only. See "Phase 14 — Push delivery" at the bottom of this file.
+
 ### Error 63007 — "Could not find a Channel with the specified From address"
 
-**Status:** ⬜ Open — investigating tomorrow (daily message limit reached 2026-06-27)
+**Status:** ✅ Obsolete (Twilio removed in Phase 14)
 
 **Symptom:** `send_alert` logs `[WHATSAPP ERROR]` with Twilio error 63007. Alert records in Mongo correctly; `whatsapp_sent` stays `False`.
 
@@ -49,7 +54,7 @@ Restart uvicorn after any `.env` change. Re-test once the daily 5-message limit 
 
 ### Error 63038 — "Account exceeded the 5 daily messages limit"
 
-**Status:** ⬜ Open (found 2026-07-31)
+**Status:** ✅ Obsolete (Twilio removed in Phase 14)
 
 **Symptom:** `.env` credentials verified correct (SID/token/`whatsapp:` prefixes all valid, contacts fallback routing works), but `whatsapp_sent` stays `False` on every alert. Direct Twilio API test confirms `TwilioRestException(429, ..., 63038, ...)`.
 
@@ -58,5 +63,31 @@ Restart uvicorn after any `.env` change. Re-test once the daily 5-message limit 
 **Fix:** No code change. Either wait ~24h for reset, or upgrade the Twilio account (add billing) — required before any live demo/pitch regardless, since 5/day won't survive a real walkthrough.
 
 **Note (2026-07-31):** Added `TWILIO_CHANNEL` toggle (`backend/config.py`, `backend/whatsapp.py`) to switch alert delivery between WhatsApp and plain SMS (`TWILIO_SMS_FROM=+17166213458`, an SMS-capable number already on the account). Confirmed via direct API test that **the 5/day cap is account-wide across all channels**, not WhatsApp-specific — switching to SMS does not bypass it. Only a real fix (billing upgrade) or the daily reset clears this.
+
+**Resolution (Phase 14):** the whole Twilio dependency was cut. `whatsapp.py`,
+all `twilio_*` settings, and `ALERT_WHATSAPP_TO` are gone. Alerts now go out as
+FCM push.
+
+---
+
+## Phase 14 — Push delivery
+
+### FCM push is best-effort, not guaranteed-instant
+
+**Status:** ⬜ Accepted design limitation
+
+- Push delivery depends on Google Play services + an internet connection on the
+  buyer's phone. Latency is typically seconds but is not contractually instant,
+  and a phone that is offline/dozing may receive the alert late or batched.
+- The **in-app WebSocket** alert (visible while the app is open) is immediate;
+  push is the out-of-app channel.
+- v1 **broadcasts every alert to every registered token** — no per-role or
+  per-device targeting. Owner / maintenance-head / vendor routing is a v2 feature
+  and needs its own phase doc.
+- `push_sent: true` means FCM *accepted* the message for ≥1 token, not that a
+  human saw it. Invalid tokens are pruned from `push_tokens` on the next send.
+- Live push needs a Firebase project + `google-services.json` (Android) +
+  service-account JSON (`FCM_CREDENTIALS_FILE`, backend). Until then the backend
+  no-ops cleanly and the app still shows live data + in-app alerts.
 
 ---

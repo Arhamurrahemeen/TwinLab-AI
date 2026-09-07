@@ -8,16 +8,16 @@
 
 ## 1. What TwinLab is
 
-**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is a **Supply Chain Asset Performance Management (SCAPM) platform** — non-invasive condition monitoring + bilingual WhatsApp alerts, priced in PKR. Same Gartner category as Siemens MindSphere / GE Predix / IBM Maximo / PTC ThingWorx, positioned as **APM 4.0** (wireless + standalone cloud) vs their APM 3.0 (deep OT integration required). Built by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently in **MVP rebuild (v2) — Phase F NFL/SCAPM reframe** for ELXR'26, with NIC Hyderabad / NIC Karachi to follow.
+**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is a **Supply Chain Asset Performance Management (SCAPM) platform** — non-invasive condition monitoring + bilingual push alerts on its own Android app, priced in PKR. Same Gartner category as Siemens MindSphere / GE Predix / IBM Maximo / PTC ThingWorx, positioned as **APM 4.0** (wireless + standalone cloud) vs their APM 3.0 (deep OT integration required). Built by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently in **MVP rebuild (v2) — Phase F NFL/SCAPM reframe** for ELXR'26, with NIC Hyderabad / NIC Karachi to follow.
 
 **First vertical wedge: generator monitoring** (banks, hospitals, telecom towers, factories, commercial buildings). The platform identity stays broad — generators are the entry point, not the whole product.
 
 - **TwinLab Pro** — asset monitoring for SME / asset-heavy operations. Generator-first.
 - **TwinLab Edu** — same engine, university lab layer. Parallel track, not a second vertical.
 
-**One-line buyer pitch:** *"We put a sensor on your highest-cost asset and WhatsApp you before it fails or gets stolen — starting with generators."*
+**One-line buyer pitch:** *"We put a sensor on your highest-cost asset and push you an alert before it fails or gets stolen — starting with generators."*
 
-**Who buys vs who uses:** the owner is the **buyer, not the user** — he receives **WhatsApp alerts only**. The dashboard is for the maintenance/ops head or owner's son. Design for both separately.
+**Who buys vs who uses:** the owner is the **buyer, not the user** — he receives **push notifications on the TwinLab Android app** (`android/`), which is also where he sees the asset list and per-asset digital twin. The web dashboard is for the maintenance/ops head or owner's son. Design for both separately. (Twilio/WhatsApp was the alert channel through Phase C–G; retired in Phase 14.)
 
 **The real competitor is the spreadsheet and the ledger** — not Siemens / GE Predix / AVEVA. Never frame TwinLab as a cheap Western-platform clone. We **complement** existing workflows; we never ask the owner to change how he works.
 
@@ -29,16 +29,19 @@
 |---|---|
 | Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration). Firmware is **ESP-IDF 6.x** (`idf.py`), lives in `firmware/twinlab_node_v1/`. Publishes `temperature`, `humidity`, `accel_x/y/z`, `vibration` on the MQTT contract as device `TL-01` via a hand-rolled publish-only MQTT-over-TCP client (no esp-mqtt dependency). **No fuel sensor, no CT clamp owned yet** — fuel-theft and load-current stay simulator-only until those parts are bought. |
 | Messaging | MQTT via **Mosquitto** |
+| Buyer app | Native **Kotlin + Jetpack Compose** (Material 3), `android/`, single Gradle module, package `com.omnitex.twinlab`. Ktor client (REST + WebSocket), kotlinx.serialization, DataStore. Asset dashboard + per-asset live detail + Compose-Canvas digital twin. Talks to the backend over the LAN (base URL set in a Settings screen). JVM unit tests only. |
 | Time-series DB | **InfluxDB 2.7** (sensor readings) |
 | Document DB | **MongoDB 7.0** (device registry, thresholds, alerts, sim control) |
 | Backend | **FastAPI** (Python) |
 | AI — chat | **Groq** `llama-3.3-70b-versatile` (Urdu / Roman Urdu / English) |
-| Alerts | **Twilio WhatsApp** (sandbox for MVP), bilingual, rupee-anchored. **Error 63007 is open** — see `phase/limitations.md` before assuming WhatsApp sends work. |
+| Alerts | **Firebase Cloud Messaging** push to the TwinLab Android app, bilingual (EN + Roman Urdu) + rupee-anchored. Broadcast to every registered device token (`push_tokens` collection); `backend/push.py` + `backend/routers/push.py`. Graceful no-op when `fcm_credentials_file` is unset. Twilio/WhatsApp retired in Phase 14. |
 | Frontend | **React + Vite** (recharts) |
 | Sim control | Separate **Vite** mini-app, same FastAPI backend |
 | Deploy | Docker Compose (dev) |
 
 **AI policy:** Groq is the only LLM. **Gemini is not used** (rate limits). **Isolation Forest is parked** for the MVP — alerting is threshold + fuel-theft rule. RUL stays **rule-based** (no trained LSTM).
+
+**Alert transport:** FCM push only (Phase 14). `firebase-admin` in `requirements.txt`; `FCM_CREDENTIALS_FILE` in `backend/.env` points at the service-account JSON (`backend/fcm-service-account.json`, gitignored). No Twilio — do not reintroduce it.
 
 ---
 
@@ -48,10 +51,14 @@
 docker compose up -d                                   # Mosquitto + InfluxDB + MongoDB
 .venv\Scripts\python ingestion.py                      # MQTT -> InfluxDB
 .venv\Scripts\python simulator.py                      # registry-driven sim publisher
-cd backend && ..\.venv\Scripts\uvicorn main:app --reload --port 8000
+cd backend && ..\.venv\Scripts\uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && npm run dev                              # dashboard  http://localhost:5173
 cd sim-control && npm run dev                           # sim control mini-app (Phase D+)
 ```
+
+> `--host 0.0.0.0` matters once the Android app is in the loop — the phone
+> reaches the backend on the laptop's LAN IP, and the app's Settings screen
+> must be given `http://<LAN-IP>:8000`, never `localhost`.
 
 | Service | URL | Creds |
 |---|---|---|
@@ -76,6 +83,16 @@ idf.py -p COM<N> flash monitor
 Replace `COM<N>` with the port Device Manager assigns on connect. No external components or managed dependencies — I2C/GPIO drivers, WiFi, and lwip sockets are all in-tree; MQTT is a small hand-rolled publish-only client in `main.c` (esp-mqtt isn't populated in every IDF 6.0 install).
 
 `main/secrets.h` is gitignored — copy `main/secrets.h.example` and fill in `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_HOST` (laptop LAN IP), `MQTT_PORT`, `DEVICE_ID`. `build/`, `sdkconfig`, `sdkconfig.old` are gitignored (machine-generated).
+
+### Android app (`android/`, Kotlin + Compose)
+
+Open `D:\TwinLab_v2\android` in Android Studio → let it generate the Gradle
+wrapper + sync (it pulls Gradle 8.9 / AGP 8.7.2 / SDK 35). Run on a device on the
+**same LAN as the backend**; first launch shows a Settings screen — enter
+`http://<laptop-LAN-IP>:8000`. `gradlew :app:testDebugUnitTest` runs the JVM unit
+tests (health status, WS parsing, twin mapping). Push needs a Firebase project:
+`android/README.md` has the steps; `android/app/google-services.json` is
+gitignored. Everything except live push works without Firebase.
 
 ---
 
@@ -110,6 +127,9 @@ This contract is the seam that makes the system **source-agnostic**: simulator a
 - Don't refactor flat Phase-1 scripts into classes / add DI.
 - Don't swap locked tech (InfluxDB, Mosquitto, MongoDB, FastAPI, Docker Compose).
 - Don't reintroduce **Gemini** or wire **Isolation Forest** into the alert path — both are out for the MVP.
+- Don't reintroduce **Twilio / WhatsApp sending** — the alert transport is FCM push (`backend/push.py`) as of Phase 14. `whatsapp.py` is deleted.
+- Don't add **role-based alert routing** to the app — v1 broadcasts every alert to every registered token; owner/maintenance/vendor routing is an explicit v2 feature.
+- Don't pull the Android app into a multi-module build, add Hilt, or add instrumented/Compose-UI tests — single module, manual `AppContainer` DI, JVM unit tests only.
 - Don't add MQTT broker auth yet (anonymous is intentional through the MVP).
 - Don't add Kubernetes / Helm / Terraform.
 - Don't write a test suite yet.
@@ -177,6 +197,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | G | `phase/phase-11.md` | Three CRM/inventory features: asset registry (warranty/vendor), consumable auto-reorder (`run_hours`), role-based WhatsApp routing | ✅ |
 | H | `phase/phase-12.md` | Demo choreography: manual injector buttons + `Demo Reset` + screen-recording backup | ✅ |
 | 13 | `phase/phase-13.md` | Hardware node: tested ESP-IDF firmware (MPU6050 + DHT22) merged into the pipeline as `TL-01`, WiFi-STA + MQTT on the locked contract. Supersedes Phase E. | ✅ |
+| 14 | `phase/phase-14.md` | Twilio/WhatsApp retired → FCM push. Native Kotlin + Compose Android app (`android/`): asset dashboard, per-asset live detail + digital twin, push alerts. Backend engine unchanged, transport swapped. | ✅ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).
 
@@ -200,4 +221,4 @@ Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
 
 ---
 
-*Last updated: Phase 13 (hardware node) for the BanoQabil / Alibaba Cloud hackathon. The bench-tested ESP-IDF firmware (MPU6050 + DHT22) is now the repo firmware at `firmware/twinlab_node_v1/` — WiFi-station + SNTP + a hand-rolled publish-only MQTT-over-TCP client (esp-mqtt isn't populated in every IDF 6.0 install), publishing `temperature`, `humidity`, `accel_x/y/z`, `vibration` as device `TL-01` on the locked MQTT contract. The old untested Arduino scaffold is deleted; firmware framework is ESP-IDF 6.x (`idf.py`). Backend/frontend unchanged — the pipeline was already source-agnostic. `vibration` is a raw passthrough value only, no alert rule. Groq-only, Isolation Forest still parked; non-invasive install narrative and generator-first wedge preserved.*
+*Last updated: Phase 14 (Twilio removal + Android app) for the BanoQabil / Alibaba Cloud hackathon. Twilio/WhatsApp is gone — the alert transport is now Firebase Cloud Messaging push (`backend/push.py`, broadcast to `push_tokens`), and the buyer surface is a native Kotlin + Jetpack Compose Android app at `android/` (asset dashboard, per-asset live detail, Compose-Canvas digital twin, push alerts, LAN client of the FastAPI backend). Backend alert engine unchanged — only the transport swapped; `whatsapp_sent` → `push_sent`; new `GET /alerts` global feed and `POST/DELETE /push/register`. Role-based routing is a deferred v2 feature. Firebase project setup + `google-services.json` is a manual prereq for live push. Phase 13 firmware (`TL-01`) unchanged. Groq-only, Isolation Forest still parked; non-invasive install narrative and generator-first wedge preserved.*

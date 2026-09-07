@@ -2,7 +2,7 @@
 
 ![TwinLab](./assets/banner.svg)
 
-**Pakistan's SCAPM alternative — non-invasive condition monitoring + WhatsApp alerts, priced in PKR**
+**Pakistan's SCAPM alternative — non-invasive condition monitoring + push alerts on TwinLab's own app, priced in PKR**
 
 <sub>Supply Chain Asset Performance Management · Generator-first wedge · SME to enterprise (NFL, HSK, Shahruk)</sub>
 
@@ -14,7 +14,7 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white&style=flat-square)](https://docker.com)
 [![Groq](https://img.shields.io/badge/Groq-F55036?logo=groq&logoColor=white&style=flat-square)](https://groq.com)
 
-[![MVP v2](https://img.shields.io/badge/MVP%20v2-Phase%20F%20in%20flight-539091?style=flat-square)]()
+[![MVP v2](https://img.shields.io/badge/MVP%20v2-Phase%2014%20%C2%B7%20Android%20app-539091?style=flat-square)]()
 [![Status](https://img.shields.io/badge/Status-Active%20Build-orange?style=flat-square)]()
 
 </div>
@@ -30,7 +30,7 @@
 > Western monitoring platforms (Siemens, GE Predix, AVEVA) cost more per year than most
 > Pakistani SMEs earn in a quarter. **The people who need these tools most can't afford them.**
 >
-> **TwinLab puts a sensor on your highest-cost asset and WhatsApps you before it fails or gets stolen.**
+> **TwinLab puts a sensor on your highest-cost asset and pushes you an alert before it fails or gets stolen.**
 
 ---
 
@@ -50,13 +50,14 @@ Two products, one engine.
 | :--- | :--- | :--- |
 | **Who** | SMEs → enterprise (banks · hospitals · telecom · factories · FMCG plants) | Engineering students |
 | **Entry point** | Generator monitoring (fuel, load, temperature, vibration) — wedges into full asset registry | Virtual IIoT experiment canvas |
-| **Alert channel** | WhatsApp (owner + role-routed) + live dashboard (ops head) | In-app coaching |
+| **Alert channel** | Push notification on the TwinLab Android app (owner) + live web dashboard (ops head) | In-app coaching |
 | **AI** | Groq LLaMA — Urdu / Roman Urdu / English | Same |
 | **Hardware** | ESP32 + DHT22 + MPU6050 (non-invasive strap-on) | ESP32-based student kits |
 | **Pilots** | HSK Bone Care · Shahruk Shell pumps · **NFL POC ask: PKR 25 lac / 10 assets / 3 months** | DUET · NED |
 
-> **Buyer vs user:** the owner is the buyer — he never opens the dashboard.
-> He receives a WhatsApp. The dashboard is for his ops head or son.
+> **Buyer vs user:** the owner is the buyer — he never opens the web dashboard.
+> He gets a push notification on the TwinLab app (where he can also glance at the
+> asset list and its digital twin). The dashboard is for his ops head or son.
 
 `📍 Karachi, Pakistan` &nbsp;·&nbsp; `🏢 OmniteX` &nbsp;·&nbsp; `🎯 NIC Hyderabad / NIC Karachi`
 
@@ -81,8 +82,8 @@ ESP32 (real hardware)          simulator.py (registry-driven)
                            rule eval             rule eval
                                 │
                          alerts collection
-                         (MongoDB) ──► WhatsApp (Twilio, role-routed)
-                                │
+                         (MongoDB) ──► FCM push ──► TwinLab Android app
+                                │                   (dashboard · detail · 3D twin)
                          WebSocket push
                                 │
                         React Dashboard
@@ -103,8 +104,9 @@ ESP32 (real hardware)          simulator.py (registry-driven)
 | Document DB | **MongoDB 7.0** (device registry, thresholds, alerts, sim control) |
 | Backend | **FastAPI** (Python) |
 | AI — chat | **Groq** `llama-3.3-70b-versatile` (Urdu / Roman Urdu / English) |
-| Alerts | **Twilio WhatsApp** sandbox — bilingual, rupee-anchored, role-routed (Phase G) |
-| Frontend | **React + Vite** (recharts) |
+| Alerts | **Firebase Cloud Messaging** push to the TwinLab Android app — bilingual (EN + Roman Urdu), rupee-anchored |
+| Frontend | **React + Vite** (recharts) — ops-head web dashboard |
+| Buyer app | Native **Kotlin + Jetpack Compose** (`android/`) — Ktor, DataStore, Compose-Canvas digital twin, FCM |
 | Deploy | Docker Compose (dev) |
 
 ---
@@ -115,8 +117,10 @@ ESP32 (real hardware)          simulator.py (registry-driven)
 | :--- | :--- |
 | [`backend/`](./backend) | FastAPI app — device registry, readings, alerts, WebSocket, Groq chat |
 | [`backend/alerts.py`](./backend/alerts.py) | Alert engine — threshold rules, fuel-theft rule, cooldown |
-| [`backend/routers/`](./backend/routers) | `devices` · `readings` · `alerts` · `chat` · `rul` · `ws` |
+| [`backend/routers/`](./backend/routers) | `devices` · `readings` · `alerts` · `chat` · `rul` · `ws` · `push` |
+| [`backend/push.py`](./backend/push.py) | FCM push sender — broadcast alerts to registered device tokens |
 | [`frontend/`](./frontend) | React dashboard — live charts, alerts panel, Groq chat FAB |
+| [`android/`](./android) | Native Kotlin + Compose app — asset dashboard, live detail, digital twin, FCM push |
 | [`sim-control/`](./sim-control) | Simulator control mini-app — generator toggle, base-value sliders, fault injectors |
 | [`phase/`](./phase) | Phase docs — plan → build log → actually achieved |
 | [`phase/MVP_v2_PLAN.md`](./phase/MVP_v2_PLAN.md) | Authoritative v2 spec (read before expanding any phase) |
@@ -162,7 +166,7 @@ npm run dev
 > **Demo run-through:** open sim-control's **Demo Controls** panel at the top of the
 > page → click **1. Inject Overheat**, **2. Inject Consumable**, **3. Inject Theft**
 > (each targets a fixed NFL demo device from `seed_nfl.py`) and watch alerts land on
-> the dashboard + WhatsApp. Click **Demo Reset** between runs to clear cooldowns,
+> the dashboard + as a push notification on the app. Click **Demo Reset** between runs to clear cooldowns,
 > injectors, and run-hours so the next run starts clean.
 
 | Service | URL | Credentials |
@@ -192,7 +196,7 @@ npm run dev
 | 3 | React dashboard — live charts, device list, alerts panel | ✅ |
 | 4 | Groq Urdu chat, rule-based RUL, load-shedding banner | ✅ |
 
-### MVP v2 rebuild — generator-first, threshold-alerted, WhatsApp-first
+### MVP v2 rebuild — generator-first, threshold-alerted, app-first
 
 | Phase | File | Scope | Status |
 | :---: | :--- | :--- | :---: |
@@ -200,10 +204,12 @@ npm run dev
 | B | [phase-6.md](./phase/phase-6.md) | Threshold alert engine · fuel-theft rule · `alerts` collection | ✅ |
 | C | [phase-7.md](./phase/phase-7.md) | Twilio WhatsApp — bilingual, rupee-anchored | ✅ |
 | D | [phase-8.md](./phase/phase-8.md) | Simulator control mini-app (`sim-control/`) | ✅ |
-| E | [phase-9.md](./phase/phase-9.md) | Real ESP32 hardware buffer · brand string cleanup | ⏸ Deferred — hardware skipped for ELXR'26 |
+| E | [phase-9.md](./phase/phase-9.md) | Real ESP32 hardware buffer · brand string cleanup | ⏸ Superseded by Phase 13 |
 | F | [phase-10.md](./phase/phase-10.md) | NFL/SCAPM reframe — seed 5 NFL devices · brand kill · SIMULATED badge | ✅ |
 | G | [phase-11.md](./phase/phase-11.md) | CRM/inventory features — asset registry · consumable auto-reorder · role-based routing | ✅ |
 | H | [phase-12.md](./phase/phase-12.md) | Demo choreography — manual injector buttons + Demo Reset + screen-recording backup | ✅ |
+| 13 | [phase-13.md](./phase/phase-13.md) | Hardware node — bench-tested ESP-IDF firmware (MPU6050 + DHT22) merged as `TL-01` | ✅ |
+| 14 | [phase-14.md](./phase/phase-14.md) | Twilio → FCM push · native Kotlin + Compose Android app (dashboard · digital twin · alerts) | ✅ |
 
 ---
 
