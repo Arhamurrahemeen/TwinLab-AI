@@ -256,10 +256,6 @@ the LAN IP with `http://` and `:8000`. Test from the phone's browser:
 | | Role |
 | :--- | :--- |
 | **Muhammad Arham Rajput** | Founder & CEO (Technical) — architecture, MQTT, InfluxDB/MongoDB, ESP32, Groq, this repo |
-| **Wahaj** | Head of Product Engineering — React dashboard, FastAPI, Mongo schema |
-| **Muskan Hanif** | Head of Design — visual identity, dashboard UI, alert templates |
-| **Abaan (Muhammad Abban Khawaja)** | Engineering & Security |
-| **Kaif Alam** | Co-founder, Growth & BD — brand, BD, NIC paperwork |
 
 ---
 
