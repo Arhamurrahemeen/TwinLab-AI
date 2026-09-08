@@ -135,7 +135,7 @@ ESP32 (real hardware)          simulator.py (registry-driven)
 
 **Prerequisites:** Docker Desktop running, `.venv` created with `pip install -r requirements.txt`.
 
-Run each command in a **separate terminal** from the repo root (`D:\TwinLab`):
+Run each command in a **separate terminal** from the repo root (`D:\TwinLab_v2`):
 
 ```powershell
 # 1 — Docker services (Mosquitto + InfluxDB + MongoDB)
@@ -144,12 +144,12 @@ docker compose up -d
 # 2 — MQTT → InfluxDB ingestion
 .venv\Scripts\python ingestion.py
 
-# 3 — Simulator (reads device registry — register a device first, see below)
+# 3 — Simulator (reads device registry — 5 NFL devices are seeded by default)
 .venv\Scripts\python simulator.py
 
-# 4 — FastAPI backend
+# 4 — FastAPI backend  (--host 0.0.0.0 so the Android app on the LAN can reach it)
 cd backend
-..\.venv\Scripts\uvicorn main:app --reload --port 8000
+..\.venv\Scripts\uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # 5 — React dashboard
 cd frontend
@@ -182,6 +182,44 @@ npm run dev
 > Open the dashboard → click **+** → set Source = **Simulator**, add sensors
 > (e.g. `fuel_level, load_current, temperature`), set thresholds → Register.
 > The simulator picks it up within 30 s and starts publishing.
+
+---
+
+## Run the Android app (`android/`)
+
+The buyer surface. Needs the backend from step 4 running with `--host 0.0.0.0`,
+and the phone on the **same Wi-Fi** as the laptop.
+
+```powershell
+# 1 — find the laptop's LAN IP (the Wi-Fi adapter's IPv4, e.g. 192.168.1.7)
+ipconfig | Select-String IPv4
+
+# 2 — one-time: let the phone reach port 8000 through Windows Firewall
+#     (run in an ADMIN PowerShell — approve the UAC prompt)
+New-NetFirewallRule -DisplayName "TwinLab 8000" -Direction Inbound `
+  -LocalPort 8000 -Protocol TCP -Action Allow -Profile Private
+```
+
+3. Open `D:\TwinLab_v2\android` in **Android Studio** → let it generate the Gradle
+   wrapper and sync (pulls Gradle 8.9 / AGP 8.7.2 / SDK 35).
+4. Plug in the phone (USB debugging on) or start an emulator → **Run** `app`.
+5. First launch shows a **Settings** screen — enter `http://<laptop-LAN-IP>:8000`
+   (the IP from step 1, **not** `localhost`). Save.
+6. The asset dashboard loads the 5 seeded NFL devices with live values. Injecting
+   a fault from sim-control pushes an alert to the app (live push also needs the
+   Firebase step in [`android/README.md`](./android/README.md) — everything else
+   works without it).
+
+```powershell
+# JVM unit tests (health status, WS parsing, twin mapping) — no device needed
+cd android
+.\gradlew :app:testDebugUnitTest
+```
+
+**App can't reach the backend?** → phone and laptop on the same Wi-Fi · backend
+started with `--host 0.0.0.0` · firewall rule added (step 2) · Settings URL uses
+the LAN IP with `http://` and `:8000`. Test from the phone's browser:
+`http://<laptop-LAN-IP>:8000/health` should return `{"status":"ok"}`.
 
 ---
 

@@ -45,7 +45,7 @@
 
 ---
 
-## 3. Run everything (Windows, from repo root `D:\TwinLab`)
+## 3. Run everything (Windows, from repo root `D:\TwinLab_v2`)
 
 ```powershell
 docker compose up -d                                   # Mosquitto + InfluxDB + MongoDB

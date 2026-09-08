@@ -22,10 +22,20 @@ Package `com.omnitex.twinlab` · minSdk 24 · targetSdk 35.
    ```
    Covers `HealthStatusTest`, `WsMessageParsingTest`, `TwinMappingTest`.
 
-3. **Run the app** on a device/emulator on the **same LAN as the backend**.
+3. **Run the app** on a device/emulator on the **same Wi-Fi as the backend**.
    First launch shows the Settings screen — enter `http://<laptop-LAN-IP>:8000`
-   (not `localhost`). The backend must be started with
-   `uvicorn main:app --host 0.0.0.0 --port 8000` so the phone can reach it.
+   (not `localhost`).
+
+   - Backend must be started with `uvicorn main:app --host 0.0.0.0 --port 8000`.
+   - Find `<laptop-LAN-IP>` with `ipconfig | Select-String IPv4` (the Wi-Fi
+     adapter's address, e.g. `192.168.1.7`).
+   - One-time, in an **admin** PowerShell, open the port to the phone:
+     ```
+     New-NetFirewallRule -DisplayName "TwinLab 8000" -Direction Inbound `
+       -LocalPort 8000 -Protocol TCP -Action Allow -Profile Private
+     ```
+   - Sanity check from the phone's browser:
+     `http://<laptop-LAN-IP>:8000/health` → `{"status":"ok"}`.
 
 ## Firebase (push notifications — Task 9)
 
