@@ -3,8 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
-    // Task 9 — uncomment once android/app/google-services.json is in place:
-    // id("com.google.gms.google-services")
+    id("com.google.gms.google-services")
 }
 
 android {

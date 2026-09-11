@@ -37,24 +37,25 @@ Package `com.omnitex.twinlab` · minSdk 24 · targetSdk 35.
    - Sanity check from the phone's browser:
      `http://<laptop-LAN-IP>:8000/health` → `{"status":"ok"}`.
 
-## Firebase (push notifications — Task 9)
+## Firebase (push notifications)
 
-Push is coded but dormant until you add Firebase:
+Live — a Firebase project backs this app and push notifications are confirmed
+working end to end (alert → `backend/push.py` → FCM → notification on device).
 
-The `firebase-messaging` dependency, the `TwinLabMessagingService`, the manifest
-`<service>`, the notification channel and the token-registration call are all
-already in place. Only two things are missing:
+Setup, for a fresh environment (new machine, new Firebase project, etc.):
 
 1. console.firebase.google.com → new project (Spark/free).
 2. Add Android app, package `com.omnitex.twinlab` → download
    `google-services.json` → drop it in `android/app/` (gitignored).
-3. Uncomment the single `com.google.gms.google-services` line in **both**
+3. Uncomment the `com.google.gms.google-services` line in **both**
    `build.gradle.kts` (root) and `app/build.gradle.kts`. Sync.
-4. Project Settings → Service Accounts → generate a private key →
-   save on the backend machine → set `FCM_CREDENTIALS_FILE` in `backend/.env`.
+4. Project Settings → Service Accounts → generate a private key → save it as
+   `backend/fcm-service-account.json` (gitignored) → `FCM_CREDENTIALS_FILE` in
+   `backend/.env` already points at that filename.
 
-Until step 3 is done the app builds and runs fine — FCM is simply inert
-(`FirebaseMessaging.getInstance()` calls are wrapped in `runCatching`).
+If `google-services.json` or the service-account key is ever missing, the app
+and backend both degrade gracefully — `FirebaseMessaging.getInstance()` calls
+are wrapped in `runCatching`, and `push.py` no-ops without credentials.
 
 ## Layout
 

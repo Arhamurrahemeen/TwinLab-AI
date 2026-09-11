@@ -2,9 +2,9 @@
 
 ![TwinLab](./assets/banner.svg)
 
-**Pakistan's SCAPM alternative — non-invasive condition monitoring + push alerts on TwinLab's own app, priced in PKR**
+**Pakistan's predictive-maintenance platform — digital-twin asset health, non-invasive sensors, push alerts on TwinLab's own app, priced in PKR**
 
-<sub>Supply Chain Asset Performance Management · Generator-first wedge · SME to enterprise (NFL, HSK, Shahruk)</sub>
+<sub>Predictive Maintenance (PdM) · digital-twin per-asset health model · non-invasive install · SME to enterprise (Textile · FMCG · NFL · HSK)</sub>
 
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=flat-square)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white&style=flat-square)](https://fastapi.tiangolo.com)
@@ -23,14 +23,16 @@
 
 ## The problem
 
-> A generator goes down at 2 AM. The owner finds out at 9 AM when the shift manager calls.
-> By then the fuel has been stolen, the food-storage compressor has been off for seven hours,
-> and the repair bill is three times what a sensor would have cost.
+> A motor bearing starts failing at 2 AM. The plant finds out at 9 AM when the line stops.
+> By then the asset is damaged, a shift of output is lost, and the repair bill is three times
+> what a sensor would have cost. SCADA controls that line — it doesn't predict failure on it,
+> and it never reached the standby genset, the compressor, or the chiller at all.
 >
-> Western monitoring platforms (Siemens, GE Predix, AVEVA) cost more per year than most
-> Pakistani SMEs earn in a quarter. **The people who need these tools most can't afford them.**
+> Foreign predictive-maintenance and asset-management platforms (Augury, Petasense; Siemens, GE Predix, IBM Maximo)
+> are USD-billed and cost more per year than most Pakistani SMEs earn in a quarter.
+> **The people who need these tools most can't afford them — and no productized Pakistani PdM alternative exists.**
 >
-> **TwinLab puts a sensor on your highest-cost asset and pushes you an alert before it fails or gets stolen.**
+> **TwinLab straps a non-invasive sensor onto your critical machines and pushes you an alert — in Roman Urdu — before an asset fails.**
 
 ---
 
@@ -42,18 +44,18 @@
 
 </div>
 
-**Category:** Supply Chain Asset Performance Management (SCAPM) — Gartner-recognized enterprise software slot alongside Siemens MindSphere, GE Predix, IBM Maximo, PTC ThingWorx. TwinLab occupies the **APM 4.0** sub-slot: wireless condition monitoring + standalone Pakistani cloud, no OT integration required. Same product reaches an SME diesel workshop *and* an NFL Faisalabad plant.
+**Category:** Predictive Maintenance (PdM) — the term Augury and Petasense use for themselves, and a budget line plants that run reliability programs already have. **Digital twin** is the feature: a live per-asset health model. TwinLab is a PdM layer that sits *ahead of* an EAM/APM system (Siemens MindSphere, IBM Maximo, GE Predix) — it does not compete with EAM, it competes with *not having predictive maintenance at all*. Architecturally it's the **APM 4.0** generation — wireless condition monitoring on a standalone Pakistani cloud, non-invasive install — vs the deep-OT-integrated APM 3.0 incumbents. Same product reaches an SME workshop *and* an NFL Faisalabad plant.
 
 Two products, one engine.
 
 | | TwinLab Pro | TwinLab Edu |
 | :--- | :--- | :--- |
-| **Who** | SMEs → enterprise (banks · hospitals · telecom · factories · FMCG plants) | Engineering students |
-| **Entry point** | Generator monitoring (fuel, load, temperature, vibration) — wedges into full asset registry | Virtual IIoT experiment canvas |
+| **Who** | Textile + FMCG plants (already run SCADA, have non-invasive coverage gaps) → SME feeder (hospitals, hospitality, anyone with a motor or generator) | Engineering students |
+| **Assets** | Motors, compressors, chillers/AC, boilers, gensets, conveyors, tanks — vibration, temperature, current (genset is a supported machine + feeder offering, **not** the wedge) | Virtual IIoT experiment canvas |
 | **Alert channel** | Push notification on the TwinLab Android app (owner) + live web dashboard (ops head) | In-app coaching |
 | **AI** | Groq LLaMA — Urdu / Roman Urdu / English | Same |
 | **Hardware** | ESP32 + DHT22 + MPU6050 (non-invasive strap-on) | ESP32-based student kits |
-| **Pilots** | HSK Bone Care · Shahruk Shell pumps · **NFL POC ask: PKR 25 lac / 10 assets / 3 months** | DUET · NED |
+| **Pilots** | HSK Bone Care (hospital, proven) · hospitality channel (Sutoon) · **NFL POC ask: PKR 25 lac / 10 assets / 3 months** | DUET · NED |
 
 > **Buyer vs user:** the owner is the buyer — he never opens the web dashboard.
 > He gets a push notification on the TwinLab app (where he can also glance at the
@@ -206,9 +208,9 @@ New-NetFirewallRule -DisplayName "TwinLab 8000" -Direction Inbound `
 5. First launch shows a **Settings** screen — enter `http://<laptop-LAN-IP>:8000`
    (the IP from step 1, **not** `localhost`). Save.
 6. The asset dashboard loads the 5 seeded NFL devices with live values. Injecting
-   a fault from sim-control pushes an alert to the app (live push also needs the
-   Firebase step in [`android/README.md`](./android/README.md) — everything else
-   works without it).
+   a fault from sim-control pushes an alert to the app **and** a live FCM push
+   notification (Firebase is wired up — see [`android/README.md`](./android/README.md)
+   if setting up a new environment).
 
 ```powershell
 # JVM unit tests (health status, WS parsing, twin mapping) — no device needed
@@ -234,7 +236,7 @@ the LAN IP with `http://` and `:8000`. Test from the phone's browser:
 | 3 | React dashboard — live charts, device list, alerts panel | ✅ |
 | 4 | Groq Urdu chat, rule-based RUL, load-shedding banner | ✅ |
 
-### MVP v2 rebuild — generator-first, threshold-alerted, app-first
+### MVP v2 rebuild — PdM engine, threshold-alerted, app-first
 
 | Phase | File | Scope | Status |
 | :---: | :--- | :--- | :---: |
@@ -243,7 +245,7 @@ the LAN IP with `http://` and `:8000`. Test from the phone's browser:
 | C | [phase-7.md](./phase/phase-7.md) | Twilio WhatsApp — bilingual, rupee-anchored | ✅ |
 | D | [phase-8.md](./phase/phase-8.md) | Simulator control mini-app (`sim-control/`) | ✅ |
 | E | [phase-9.md](./phase/phase-9.md) | Real ESP32 hardware buffer · brand string cleanup | ⏸ Superseded by Phase 13 |
-| F | [phase-10.md](./phase/phase-10.md) | NFL/SCAPM reframe — seed 5 NFL devices · brand kill · SIMULATED badge | ✅ |
+| F | [phase-10.md](./phase/phase-10.md) | NFL reframe — seed 5 NFL devices · brand kill · SIMULATED badge | ✅ |
 | G | [phase-11.md](./phase/phase-11.md) | CRM/inventory features — asset registry · consumable auto-reorder · role-based routing | ✅ |
 | H | [phase-12.md](./phase/phase-12.md) | Demo choreography — manual injector buttons + Demo Reset + screen-recording backup | ✅ |
 | 13 | [phase-13.md](./phase/phase-13.md) | Hardware node — bench-tested ESP-IDF firmware (MPU6050 + DHT22) merged as `TL-01` | ✅ |
@@ -255,7 +257,8 @@ the LAN IP with `http://` and `:8000`. Test from the phone's browser:
 
 | | Role |
 | :--- | :--- |
-| **Muhammad Arham Rajput** | Founder & CEO (Technical) — architecture, MQTT, InfluxDB/MongoDB, ESP32, Groq, this repo |
+| **Muhammad Arham Rajput** | Founder & CEO — product end to end (hardware, firmware, backend, AI alerting), architecture, delivery |
+| **Malaika** | Co-founder & Head of Finance, Compliance and Sales — financial model, unit economics, compliance, customer pipeline and conversion |
 
 ---
 
