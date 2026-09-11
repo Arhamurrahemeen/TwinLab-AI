@@ -30,11 +30,16 @@ object TwinMapping {
     fun channels(argb: Int): Triple<Int, Int, Int> =
         Triple((argb shr 16) and 0xFF, (argb shr 8) and 0xFF, argb and 0xFF)
 
+    // Cool/OK -> hot/critical, interpolated between the same muted brand status colors
+    // used everywhere else in the app (see ui/theme/Color.kt: StatusOk, StatusCritical).
+    private const val COOL_R = 0x3F; private const val COOL_G = 0xA7; private const val COOL_B = 0x6B
+    private const val HOT_R = 0xD9; private const val HOT_G = 0x53; private const val HOT_B = 0x4F
+
     private fun lerpColor(t: Float): Int {
         val c = t.coerceIn(0f, 1f)
-        val r = (c * 255).toInt()
-        val g = ((1 - c) * 200 + 55).toInt()
-        val b = 0x30
+        val r = (COOL_R + (HOT_R - COOL_R) * c).toInt()
+        val g = (COOL_G + (HOT_G - COOL_G) * c).toInt()
+        val b = (COOL_B + (HOT_B - COOL_B) * c).toInt()
         return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
     }
 
@@ -60,11 +65,12 @@ object TwinMapping {
             else -> IDLE_RPM
         }
 
+        // Mirrors ui/theme/Color.kt: StatusCritical/StatusWarning/StatusOk/StatusUnknown.
         val ring = when (healthStatus(readings, thresholds)) {
-            Health.CRITICAL -> 0xFFE53935.toInt()
-            Health.WARNING -> 0xFFFFB300.toInt()
-            Health.OK -> 0xFF43A047.toInt()
-            Health.UNKNOWN -> 0xFF9E9E9E.toInt()
+            Health.CRITICAL -> 0xFFD9534F.toInt()
+            Health.WARNING -> 0xFFD9A441.toInt()
+            Health.OK -> 0xFF3FA76B.toInt()
+            Health.UNKNOWN -> 0xFF9AA7AF.toInt()
         }
 
         return TwinState(bodyColor, shake, rpm, ring, lastMsgAgeMs > STALE_MS)

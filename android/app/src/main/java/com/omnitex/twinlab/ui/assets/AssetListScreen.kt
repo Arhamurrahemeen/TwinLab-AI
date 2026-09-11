@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omnitex.twinlab.ui.common.StatusDot
+import com.omnitex.twinlab.ui.common.TwinLabWordmark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +45,7 @@ fun AssetListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("TwinLab") },
+                title = { TwinLabWordmark() },
                 actions = {
                     IconButton(onClick = { vm.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")

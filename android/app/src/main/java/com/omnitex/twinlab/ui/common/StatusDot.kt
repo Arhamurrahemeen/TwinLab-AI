@@ -9,12 +9,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.omnitex.twinlab.domain.Health
+import com.omnitex.twinlab.ui.theme.StatusCritical
+import com.omnitex.twinlab.ui.theme.StatusOk
+import com.omnitex.twinlab.ui.theme.StatusUnknown
+import com.omnitex.twinlab.ui.theme.StatusWarning
 
 fun Health.color(): Color = when (this) {
-    Health.OK -> Color(0xFF43A047)
-    Health.WARNING -> Color(0xFFFFB300)
-    Health.CRITICAL -> Color(0xFFE53935)
-    Health.UNKNOWN -> Color(0xFF9E9E9E)
+    Health.OK -> StatusOk
+    Health.WARNING -> StatusWarning
+    Health.CRITICAL -> StatusCritical
+    Health.UNKNOWN -> StatusUnknown
 }
 
 fun Health.label(): String = when (this) {
@@ -36,7 +40,7 @@ fun StatusDot(health: Health, modifier: Modifier = Modifier, size: Int = 12) {
 /** Severity strip / text color for an alert severity string. */
 @Composable
 fun severityColor(severity: String): Color = when (severity.lowercase()) {
-    "critical" -> Color(0xFFE53935)
-    "warning" -> Color(0xFFFFB300)
+    "critical" -> StatusCritical
+    "warning" -> StatusWarning
     else -> MaterialTheme.colorScheme.outline
 }

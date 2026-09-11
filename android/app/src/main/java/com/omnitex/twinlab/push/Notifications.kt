@@ -37,7 +37,7 @@ fun showAlertNotification(ctx: Context, title: String, body: String, deviceId: S
     )
 
     val n = NotificationCompat.Builder(ctx, ALERT_CHANNEL)
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setSmallIcon(R.drawable.ic_notification)
         .setContentTitle(title)
         .setContentText(body)
         .setStyle(NotificationCompat.BigTextStyle().bigText(body))

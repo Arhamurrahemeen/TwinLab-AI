@@ -16,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.MaterialTheme
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,6 +34,7 @@ import com.omnitex.twinlab.ui.detail.AssetDetailScreen
 import com.omnitex.twinlab.ui.detail.AssetDetailViewModel
 import com.omnitex.twinlab.ui.settings.SettingsScreen
 import com.omnitex.twinlab.ui.settings.SettingsViewModel
+import com.omnitex.twinlab.ui.theme.TwinLabTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
         deepLinkDevice = intent?.getStringExtra("deviceId")
 
         setContent {
-            MaterialTheme {
+            TwinLabTheme {
                 NotificationPermissionGate()
 
                 val baseUrl by container.settings.baseUrl.collectAsStateWithLifecycle(initialValue = null)
