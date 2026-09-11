@@ -23,7 +23,7 @@ export default function App() {
           <span className="brand-lab">Lab</span>
         </div>
         <span className="navbar-sep" />
-        <span className="navbar-sub">SCAPM for Pakistani Industry</span>
+        <span className="navbar-sub">Predictive Maintenance for Pakistani Industry</span>
         <div className="navbar-right">
           <span className={`status-dot ${connected ? 'status-dot--live' : 'status-dot--off'}`} />
           <span className={`status-label ${connected ? '' : 'status-label--off'}`}>
