@@ -81,6 +81,19 @@ static esp_err_t mpu_r(uint8_t reg, uint8_t *buf, size_t n)
     return i2c_master_transmit_receive(mpu, &reg, 1, buf, n, 100);
 }
 
+/* A cold-boot I2C bus can still be flaky right after i2c_master_probe()
+   succeeds (observed: WHO_AM_I read failing on the same boot as a slow
+   probe). An unretried failed write here leaves the MPU6050 asleep with
+   accel frozen at 0 for the whole session, so retry each init write until
+   the device ACKs it — same pattern as the probe retry below. */
+static void mpu_w_retry(uint8_t reg, uint8_t val)
+{
+    while (mpu_w(reg, val) != ESP_OK) {
+        ESP_LOGW(TAG, "mpu init write 0x%02X=0x%02X failed, retrying", reg, val);
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+}
+
 /* Boot-time sanity check. A powered breakout holds SDA/SCL up through its
    onboard 4.7k resistors, which beat the internal ~45k pull-down. No pull-up
    means either no power to the module or the wire isn't connected. */
@@ -466,11 +479,11 @@ void app_main(void)
         ESP_LOGI(TAG, "WHO_AM_I = 0x%02X", who);
     }
 
-    mpu_w(0x6B, 0x01);   /* wake, gyro PLL clock */
-    mpu_w(0x1A, 0x03);   /* DLPF 44 Hz           */
-    mpu_w(0x19, 0x00);   /* 1 kHz sample rate    */
-    mpu_w(0x1B, 0x08);   /* gyro range +-500 dps */
-    mpu_w(0x1C, 0x10);   /* accel range +-8 g    */
+    mpu_w_retry(0x6B, 0x01);   /* wake, gyro PLL clock */
+    mpu_w_retry(0x1A, 0x03);   /* DLPF 44 Hz           */
+    mpu_w_retry(0x19, 0x00);   /* 1 kHz sample rate    */
+    mpu_w_retry(0x1B, 0x08);   /* gyro range +-500 dps */
+    mpu_w_retry(0x1C, 0x10);   /* accel range +-8 g    */
 
     wifi_start();
     sntp_sync();
