@@ -136,7 +136,7 @@ This contract is the seam that makes the system **source-agnostic**: simulator a
 - Don't rename the GitHub repo (`TwinLab-AI`) — it breaks remotes. Fix the **product name in code/UI strings** to "TwinLab" instead.
 - Don't commit `backend/.env` or firmware `main/secrets.h` (both gitignored, both hold credentials).
 - Don't change the MQTT topic contract.
-- **Don't expand the hardware node's sensor set beyond what `phase-13.md` scopes** (temperature, humidity, accel_x/y/z, and `vibration` — all raw passthrough values). `vibration` has **no alert rule**. Run/stop detection, software hour meter, and a vibration-RMS alert rule were discussed but are explicitly **not** in scope — they need their own phase doc and a decision from Arham first.
+- **Don't expand the hardware node's sensor set beyond what `phase-13.md` scopes** (temperature, humidity, accel_x/y/z, and `vibration` — all raw passthrough values). Vibration now has a threshold alert rule and drives run/stop detection for the run-hours meter (Phase 16) — **`VIB_RUNNING_G` and the vibration alert threshold are both uncalibrated placeholders** (no hardware node has ever been mounted on a spinning machine) and need recalibration once one is.
 - Don't claim fuel-theft or overload detection works on real hardware. No fuel sensor or CT clamp is owned yet — those rules stay simulator-only until the parts exist.
 
 ---
@@ -199,6 +199,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | 13 | `phase/phase-13.md` | Hardware node: tested ESP-IDF firmware (MPU6050 + DHT22) merged into the pipeline as `TL-01`, WiFi-STA + MQTT on the locked contract. Supersedes Phase E. | ✅ |
 | 14 | `phase/phase-14.md` | Twilio/WhatsApp retired → FCM push. Native Kotlin + Compose Android app (`android/`): asset dashboard, per-asset live detail + digital twin, push alerts. Backend engine unchanged, transport swapped. | ✅ |
 | 15 | `phase/phase-15.md` | Device onboarding: MAC-derived hardware device IDs (no more per-board `secrets.h` edit), sensor checkbox picker + discover-unregistered-devices + delete UI. First real hardware flash-and-verify (`TL-B49244`, confirmed live via `mosquitto_sub`). | ✅ |
+| 16 | `phase/phase-16.md` | Vibration threshold alert rule (critical severity) + vibration-driven run/stop detection, giving hardware nodes a working run-hours meter for the first time (no CT clamp needed). `VIB_RUNNING_G` and the vibration alert threshold are uncalibrated placeholders pending a real spinning-machine mount. | ✅ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).
 

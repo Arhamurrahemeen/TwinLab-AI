@@ -21,8 +21,13 @@ OFF_AMPS       = 2.0    # load_current below this means generator is off
 CACHE_TTL_S    = 10     # how often to reload thresholds from Mongo
 RUN_HOURS_FLUSH_S = 60  # how often to batch-persist in-memory run-hours to Mongo
 
+# EMA-vibration (|accel|-1g, see firmware main.c) above this = hardware asset
+# running. UNCALIBRATED placeholder — no hardware node has ever been mounted
+# on a spinning machine yet (TL-B49244 is bench-only). Recalibrate once one is.
+VIB_RUNNING_G  = 0.03
+
 # Max-breach on these sensors → critical; everything else → warning
-_CRITICAL_MAX = {"load_current", "temperature"}
+_CRITICAL_MAX = {"load_current", "temperature", "vibration"}
 
 # ── Module-level state (GIL-safe for CPython dict reads/replacements) ───
 _threshold_cache: dict = {}   # {device_id: {sensor: {"min": v|None, "max": v|None}}}
@@ -255,14 +260,14 @@ def evaluate(
     return None
 
 
-def evaluate_run_hours(device_id: str, value: float) -> dict | None:
+def _evaluate_run_hours(device_id: str, running: bool) -> dict | None:
     """
-    Accumulate engine run-hours from load_current readings (value > OFF_AMPS means
-    running). Fires a consumable_reorder alert when accumulated hours cross the
-    device's run_hours_threshold, then resets the counter. Sync — called from the
-    MQTT thread, same as evaluate().
+    Shared accumulator behind both load_current- and vibration-driven run
+    detection. Fires a consumable_reorder alert when accumulated hours cross
+    the device's run_hours_threshold, then resets the counter. Sync — called
+    from the MQTT thread, same as evaluate().
     """
-    if value <= OFF_AMPS:
+    if not running:
         _last_hr_ts.pop(device_id, None)
         return None
 
@@ -283,3 +288,46 @@ def evaluate_run_hours(device_id: str, value: float) -> dict | None:
         )
 
     return None
+
+
+def evaluate_run_hours(device_id: str, value: float) -> dict | None:
+    """Load-current-driven run detection (simulator gensets with a CT clamp)."""
+    return _evaluate_run_hours(device_id, value > OFF_AMPS)
+
+
+def evaluate_run_hours_vibration(device_id: str, value: float) -> dict | None:
+    """
+    Vibration-driven run detection (hardware nodes with no CT clamp) — see
+    VIB_RUNNING_G above for the calibration caveat.
+    """
+    return _evaluate_run_hours(device_id, value > VIB_RUNNING_G)
+
+
+if __name__ == "__main__":
+    # Self-check — no test framework, matches this repo's flat-script convention.
+    _threshold_cache["TL-SELFTEST"] = {"vibration": {"min": None, "max": 0.15}}
+    _run_hours_threshold_cache["TL-SELFTEST"] = 1.0 / 3600  # 1 second, for a fast test
+
+    # 1. Below threshold — no alert.
+    assert evaluate("TL-SELFTEST", "vibration", 0.05, "g", {}) is None
+
+    # 2. Above threshold — critical threshold alert (vibration is in _CRITICAL_MAX).
+    a = evaluate("TL-SELFTEST", "vibration", 0.20, "g", {})
+    assert a is not None and a["severity"] == "critical" and a["alert_type"] == "threshold"
+
+    # 3. Cooldown suppresses an immediate re-fire.
+    assert evaluate("TL-SELFTEST", "vibration", 0.20, "g", {}) is None
+
+    # 4. Idle (below VIB_RUNNING_G) never accumulates run-hours.
+    assert evaluate_run_hours_vibration("TL-SELFTEST", 0.01) is None
+    assert _run_hours_mem.get("TL-SELFTEST", 0.0) == 0.0
+
+    # 5. Running (above VIB_RUNNING_G) accumulates, then fires consumable_reorder
+    #    once the (artificially tiny) run_hours_threshold is crossed.
+    evaluate_run_hours_vibration("TL-SELFTEST", 0.10)
+    time.sleep(1.1)
+    r = evaluate_run_hours_vibration("TL-SELFTEST", 0.10)
+    assert r is not None and r["alert_type"] == "consumable_reorder"
+    assert _run_hours_mem["TL-SELFTEST"] == 0.0  # reset after firing
+
+    print("[alerts] self-check passed")

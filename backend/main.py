@@ -67,6 +67,10 @@ def _on_mqtt_message(client, userdata, msg):
                 run_hours_alert = alert_engine.evaluate_run_hours(device_id, data["value"])
                 if run_hours_alert:
                     asyncio.run_coroutine_threadsafe(_persist_alert(run_hours_alert), _loop)
+            elif sensor_name == "vibration":
+                run_hours_alert = alert_engine.evaluate_run_hours_vibration(device_id, data["value"])
+                if run_hours_alert:
+                    asyncio.run_coroutine_threadsafe(_persist_alert(run_hours_alert), _loop)
     except Exception as e:
         log.error(f"[MQTT] WS push error: {e}")
 
