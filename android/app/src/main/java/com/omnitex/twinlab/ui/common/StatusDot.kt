@@ -28,13 +28,25 @@ fun Health.label(): String = when (this) {
     Health.UNKNOWN -> "NO DATA"
 }
 
+/** A status dot with a soft translucent glow ring — echoes the digital twin's status rim. */
 @Composable
 fun StatusDot(health: Health, modifier: Modifier = Modifier, size: Int = 12) {
+    val color = health.color()
     androidx.compose.foundation.layout.Box(
-        modifier
-            .size(size.dp)
-            .background(health.color(), CircleShape),
-    )
+        modifier.size((size * 2.2f).dp),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+    ) {
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .size((size * 2.2f).dp)
+                .background(color.copy(alpha = 0.16f), CircleShape),
+        )
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .size(size.dp)
+                .background(color, CircleShape),
+        )
+    }
 }
 
 /** Severity strip / text color for an alert severity string. */

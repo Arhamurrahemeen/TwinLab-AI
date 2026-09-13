@@ -1,6 +1,5 @@
 package com.omnitex.twinlab.ui.assets
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,15 +12,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omnitex.twinlab.ui.common.StatusDot
+import com.omnitex.twinlab.ui.common.TwinLabTopBar
 import com.omnitex.twinlab.ui.common.TwinLabWordmark
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +44,7 @@ fun AssetListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            TwinLabTopBar(
                 title = { TwinLabWordmark() },
                 actions = {
                     IconButton(onClick = { vm.refresh() }) {
@@ -81,7 +81,6 @@ fun AssetListScreen(
                     }
                     items(rows, key = { it.device.device_id }) { row ->
                         DeviceRow(row) { onOpen(row.device.device_id) }
-                        HorizontalDivider()
                     }
                 }
             }
@@ -91,27 +90,36 @@ fun AssetListScreen(
 
 @Composable
 private fun DeviceRow(row: AssetListViewModel.Row, onClick: () -> Unit) {
-    Row(
-        Modifier
+    Card(
+        onClick = onClick,
+        modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp, 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 16.dp, vertical = 5.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        StatusDot(row.health)
-        Column(Modifier.fillMaxWidth()) {
-            Text(row.device.name, style = MaterialTheme.typography.bodyLarge)
-            val summary = row.readings.entries
-                .sortedBy { it.key }
-                .take(3)
-                .joinToString("   ") { "${it.key.replace('_', ' ')} ${fmt(it.value)}" }
-                .ifBlank { "no readings" }
-            Text(
-                summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(13.dp),
+        ) {
+            StatusDot(row.health)
+            Column(Modifier.fillMaxWidth()) {
+                Text(row.device.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                val summary = row.readings.entries
+                    .sortedBy { it.key }
+                    .take(3)
+                    .joinToString("   ") { "${it.key.replace('_', ' ')} ${fmt(it.value)}" }
+                    .ifBlank { "no readings" }
+                Text(
+                    summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

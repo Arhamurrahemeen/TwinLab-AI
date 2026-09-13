@@ -6,9 +6,10 @@ import androidx.compose.ui.graphics.Color
 val TwinLabNavy = Color(0xFF1B395B)
 val TwinLabTeal = Color(0xFF2B768B)
 
-val TwinLabBackground = Color(0xFFF6F9FA)
+val TwinLabBackground = Color(0xFFF1F6F5)
 val TwinLabSurface = Color(0xFFFFFFFF)
 val TwinLabSurfaceVariant = Color(0xFFE9EFF2)
+val TwinLabCardShadow = Color(0xFF1B395B)
 
 val TwinLabOnBackground = Color(0xFF1E2A33)
 val TwinLabOutline = Color(0xFF6B7A85)

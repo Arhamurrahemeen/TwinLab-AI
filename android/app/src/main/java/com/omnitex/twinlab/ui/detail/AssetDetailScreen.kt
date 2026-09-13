@@ -17,7 +17,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omnitex.twinlab.ui.common.Gauge
 import com.omnitex.twinlab.ui.common.Sparkline
+import com.omnitex.twinlab.ui.common.TwinLabTopBar
 import com.omnitex.twinlab.ui.common.color
 import com.omnitex.twinlab.ui.common.label
 import com.omnitex.twinlab.ui.common.relativeTime
@@ -43,7 +43,7 @@ fun AssetDetailScreen(vm: AssetDetailViewModel, onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            TwinLabTopBar(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

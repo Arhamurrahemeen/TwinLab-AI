@@ -201,6 +201,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | 15 | `phase/phase-15.md` | Device onboarding: MAC-derived hardware device IDs (no more per-board `secrets.h` edit), sensor checkbox picker + discover-unregistered-devices + delete UI. First real hardware flash-and-verify (`TL-B49244`, confirmed live via `mosquitto_sub`). | ✅ |
 | 16 | `phase/phase-16.md` | Vibration threshold alert rule (critical severity) + vibration-driven run/stop detection, giving hardware nodes a working run-hours meter for the first time (no CT clamp needed). `VIB_RUNNING_G` and the vibration alert threshold are uncalibrated placeholders pending a real spinning-machine mount. | ✅ |
 | 17 | `phase/phase-17.md` | Digital twin visual redesign: flat rounded-rect + oversized fan → isometric 3-face shading, neon status rim, properly-inset 5-blade fan. Ported from a Claude Design mockup into `TwinView.kt`, same `TwinState` contract. Dropped a duplicate "SIGNAL LOST" text (`AssetDetailScreen` already shows it). | ✅ |
+| 18 | `phase/phase-18.md` | App-wide theme refresh: shared `TwinLabTopBar` (shadow + tinted icons) across all 4 screens, card-based asset list + alert rows, glow-ring status dots, warmer background. Launcher icon artwork scaled to 80% for breathing room. | ✅ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).
 
