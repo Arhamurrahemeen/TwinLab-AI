@@ -8,14 +8,14 @@
 
 ## 1. What TwinLab is
 
-**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is a **Supply Chain Asset Performance Management (SCAPM) platform** — non-invasive condition monitoring + bilingual push alerts on its own Android app, priced in PKR. Same Gartner category as Siemens MindSphere / GE Predix / IBM Maximo / PTC ThingWorx, positioned as **APM 4.0** (wireless + standalone cloud) vs their APM 3.0 (deep OT integration required). Built by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently in **MVP rebuild (v2) — Phase F NFL/SCAPM reframe** for ELXR'26, with NIC Hyderabad / NIC Karachi to follow.
+**TwinLab** (one word, capital T and L — *not* "TwinLab AI") is a **Predictive Maintenance (PdM) platform** — non-invasive condition monitoring + a live digital-twin view of critical machines, bilingual push alerts on its own Android app, priced in PKR. Category corrected from "SCAPM" 2026-09-05 (see vault `TwinLab_Identity.md`) — PdM is the term the real comparables (Augury, Petasense) use; "digital twin" is a feature, not the category. Architecturally **APM 4.0** (wireless condition monitoring + standalone cloud, non-invasive install) vs the incumbents' APM 3.0 (Siemens MindSphere / GE Predix / IBM Maximo / PTC ThingWorx — deep OT integration required). Built by **OmniteX** (Pakistan; founder Muhammad Arham Rajput). Currently past Phase 15 of the MVP v2 rebuild, pitching NIC Karachi (Final Round) and SEIC Karachi (Cohort 2).
 
-**First vertical wedge: generator monitoring** (banks, hospitals, telecom towers, factories, commercial buildings). The platform identity stays broad — generators are the entry point, not the whole product.
+**Lead vertical: Textile + FMCG enterprise plants** (locked 2026-08-10) — SCADA-present plants with non-invasive coverage gaps (gensets, compressors, chillers, HVAC, older lines), running in parallel with an SME feeder motion (hospitals, guest houses, general SME). **Genset is a supported machine and feeder/service offering, no longer the wedge.**
 
-- **TwinLab Pro** — asset monitoring for SME / asset-heavy operations. Generator-first.
-- **TwinLab Edu** — same engine, university lab layer. Parallel track, not a second vertical.
+- **TwinLab Pro** — asset monitoring for SME / asset-heavy operations and enterprise Textile+FMCG plants.
+- **TwinLab Edu** — parked; relaunched as its own venture, **OmniTwin** (see vault `OmniTwin/Overview.md`). Not a TwinLab track anymore.
 
-**One-line buyer pitch:** *"We put a sensor on your highest-cost asset and push you an alert before it fails or gets stolen — starting with generators."*
+**One-line buyer pitch:** *"We give Pakistani industries and SMEs a digital-twin view of their critical machines — non-invasive sensors that flag failure before it happens, pushed to your phone in Roman Urdu. PKR-billed, not USD-billed."*
 
 **Who buys vs who uses:** the owner is the **buyer, not the user** — he receives **push notifications on the TwinLab Android app** (`android/`), which is also where he sees the asset list and per-asset digital twin. The web dashboard is for the maintenance/ops head or owner's son. Design for both separately. (Twilio/WhatsApp was the alert channel through Phase C–G; retired in Phase 14.)
 
@@ -27,7 +27,7 @@
 
 | Layer | Choice |
 |---|---|
-| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration). Firmware is **ESP-IDF 6.x** (`idf.py`), lives in `firmware/twinlab_node_v1/`. Publishes `temperature`, `humidity`, `accel_x/y/z`, `vibration` on the MQTT contract as device `TL-01` via a hand-rolled publish-only MQTT-over-TCP client (no esp-mqtt dependency). **No fuel sensor, no CT clamp owned yet** — fuel-theft and load-current stay simulator-only until those parts are bought. |
+| Hardware (real) | ESP32 + DHT22 (temp/humidity) + MPU6050 (accel/vibration). Firmware is **ESP-IDF 6.x** (`idf.py`), lives in `firmware/twinlab_node_v1/`. Publishes `temperature`, `humidity`, `accel_x/y/z`, `vibration` on the MQTT contract via a hand-rolled publish-only MQTT-over-TCP client (no esp-mqtt dependency). **Device ID is MAC-derived at boot** (Phase 15) — no per-board `secrets.h` edit; the bench unit currently publishes as `TL-B49244`, flashed and verified live. **No fuel sensor, no CT clamp owned yet** — fuel-theft and load-current stay simulator-only until those parts are bought. |
 | Messaging | MQTT via **Mosquitto** |
 | Buyer app | Native **Kotlin + Jetpack Compose** (Material 3), `android/`, single Gradle module, package `com.omnitex.twinlab`. Ktor client (REST + WebSocket), kotlinx.serialization, DataStore. Asset dashboard + per-asset live detail + Compose-Canvas digital twin. Talks to the backend over the LAN (base URL set in a Settings screen). JVM unit tests only. |
 | Time-series DB | **InfluxDB 2.7** (sensor readings) |
@@ -198,6 +198,7 @@ History: `phase-1..4` = original build (done). v2 rebuild continues as **phase-5
 | H | `phase/phase-12.md` | Demo choreography: manual injector buttons + `Demo Reset` + screen-recording backup | ✅ |
 | 13 | `phase/phase-13.md` | Hardware node: tested ESP-IDF firmware (MPU6050 + DHT22) merged into the pipeline as `TL-01`, WiFi-STA + MQTT on the locked contract. Supersedes Phase E. | ✅ |
 | 14 | `phase/phase-14.md` | Twilio/WhatsApp retired → FCM push. Native Kotlin + Compose Android app (`android/`): asset dashboard, per-asset live detail + digital twin, push alerts. Backend engine unchanged, transport swapped. | ✅ |
+| 15 | `phase/phase-15.md` | Device onboarding: MAC-derived hardware device IDs (no more per-board `secrets.h` edit), sensor checkbox picker + discover-unregistered-devices + delete UI. First real hardware flash-and-verify (`TL-B49244`, confirmed live via `mosquitto_sub`). | ✅ |
 
 Update the Status column (⬜ → ✅) as each phase's "Actually achieved" is written. Use ⏸ for phases explicitly deferred (scope moved elsewhere or postponed to a later cycle).
 
@@ -221,4 +222,4 @@ Remote: `https://github.com/Arhamurrahemeen/TwinLab-AI.git`
 
 ---
 
-*Last updated: Phase 14 (Twilio removal + Android app) for the BanoQabil / Alibaba Cloud hackathon. Twilio/WhatsApp is gone — the alert transport is now Firebase Cloud Messaging push (`backend/push.py`, broadcast to `push_tokens`), and the buyer surface is a native Kotlin + Jetpack Compose Android app at `android/` (asset dashboard, per-asset live detail, Compose-Canvas digital twin, push alerts, LAN client of the FastAPI backend). Backend alert engine unchanged — only the transport swapped; `whatsapp_sent` → `push_sent`; new `GET /alerts` global feed and `POST/DELETE /push/register`. Role-based routing is a deferred v2 feature. Firebase project is live and push is confirmed working end to end (`android/app/google-services.json` + `backend/fcm-service-account.json`, both gitignored — see `android/README.md` for setup on a fresh environment). Phase 13 firmware (`TL-01`) unchanged. Groq-only, Isolation Forest still parked; non-invasive install narrative and generator-first wedge preserved.*
+*Last updated: Phase 15 (2026-09-13) — MAC-derived device IDs, sensor picker/discover/delete UI, and the firmware's first real flash-and-verify (`TL-B49244`, confirmed live via `mosquitto_sub` — no longer simulator-only). Firebase project is live (`google-services.json` + `backend/fcm-service-account.json` both in place, gitignored) and the Android debug APK is compiled. **End-to-end push re-verified 2026-09-13** — full pipeline (simulator injector → threshold alert → `push.py` → FCM) fired against the one real registered token, backend logged `sent 1/1`, the persisted alert carries `push_sent: true`, and Arham confirmed the notification rendered on the physical phone (see `phase/rd_benchmarks.md`). Fully confirmed, not just API-accepted. Category corrected **SCAPM → Predictive Maintenance (PdM)** and the **generator-first wedge killed** in favor of Textile+FMCG enterprise (2026-09-05/2026-08-10, per vault `TwinLab_Identity.md`) — genset is now a supported machine/feeder offering, not the entry point. Groq-only, Isolation Forest still parked; non-invasive install narrative preserved.*

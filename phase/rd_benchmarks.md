@@ -43,6 +43,25 @@ estimates. Metrics that couldn't be honestly measured in this environment are ma
 - **Screen recording**: not produced — this rehearsal was run headlessly via direct API calls (no browser session was open to record). Arham should record one clean run through the actual dashboard + sim-control UI before demo day, per the doc's non-negotiable step 12.7.
 - **Hybrid hardware branch**: not attempted — out of scope for this automated rehearsal (needs physical ESP32 + DHT22 on the bench).
 
+## FCM push delivery — 2026-09-13 (end-to-end verification)
+
+First confirmed real-token, real-alert push test since Phase 14 replaced Twilio/WhatsApp
+with Firebase Cloud Messaging. Stack running natively (Docker Mosquitto/InfluxDB/MongoDB +
+backend/ingestion/simulator via `.venv`), `push_tokens` already held one real FCM token
+(registered by the compiled Android APK, 2026-09-11).
+
+- Triggered `PUT /sim/NFL-SITE-GEN-01` with `inject.overheat.active=true` → simulator
+  published `temperature` up to ~99°C (threshold max 40) → alert engine fired within
+  seconds: `[ALERT] threshold critical — NFL-SITE-GEN-01/temperature — above max 40`.
+- Backend log: `[PUSH] Firebase initialised` then `[PUSH] NFL-SITE-GEN-01/threshold — sent 1/1`.
+- `GET /alerts` confirms the persisted alert doc carries `"push_sent": true`.
+- A second `push_sent: true` alert from earlier the same day (08:54 UTC, fuel_level warning)
+  was already present in the alerts collection before this test — Arham appears to have
+  run this same verification independently earlier today.
+- **Confirmed by Arham:** the push notification showed up on the physical phone. Full
+  pipeline (simulator injector → threshold alert → FCM → phone banner) verified end to end.
+- Ran `POST /sim/reset` afterward to clear the injected state and the test alert.
+
 ## Gotcha carried forward from Phase 11
 
 `evaluate_run_hours()`'s accumulation is real wall-clock (`delta_h = delta_s / 3600`), so
