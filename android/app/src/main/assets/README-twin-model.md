@@ -17,3 +17,11 @@ To upgrade to a real 3D twin later:
    "SIGNAL LOST" overlay when `TwinState.stale`.
 
 `TwinMapping.stateFrom()` and its unit tests do not change — only the renderer.
+
+## Status (2026-09-13)
+
+First real device check: app connected over LAN, dashboard + per-asset live
+detail both confirmed updating correctly. **The 2D Compose Canvas twin itself
+looks bad on a real phone** (Arham's words: "looks awful") — functional, not
+presentable. Confirmed deferred: real 3D twin work (the upgrade path above)
+is a future task, not urgent now.
