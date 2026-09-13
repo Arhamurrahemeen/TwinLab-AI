@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { updateThreshold, buildThresholds } from '../threshold-utils'
+import { sensorOptionsFor } from '../sensor-options'
 
 const BASE = '/api'
 
@@ -7,7 +8,7 @@ export default function EditDevice({ device, onUpdated, onClose }) {
   const [form, setForm] = useState({
     name:                device.name                ?? '',
     location:            device.location             ?? '',
-    sensors:              (device.sensors ?? []).join(', '),
+    sensors:              device.sensors ?? [],
     source:               device.source               ?? 'simulator',
     status:                device.status               ?? 'active',
     asset_type:            device.asset_type           ?? '',
@@ -37,10 +38,21 @@ export default function EditDevice({ device, onUpdated, onClose }) {
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
 
-  const sensorList = useMemo(
-    () => form.sensors.split(',').map(s => s.trim()).filter(Boolean),
-    [form.sensors],
-  )
+  const sensorList = form.sensors
+
+  const toggleSensor = (sensor) =>
+    setForm(f => ({
+      ...f,
+      sensors: f.sensors.includes(sensor)
+        ? f.sensors.filter(s => s !== sensor)
+        : [...f.sensors, sensor],
+    }))
+
+  const setSource = (e) => {
+    const source = e.target.value
+    const allowed = sensorOptionsFor(source)
+    setForm(f => ({ ...f, source, sensors: f.sensors.filter(s => allowed.includes(s)) }))
+  }
 
   const setThreshold = (sensor, bound, raw) =>
     setThresholds(prev => updateThreshold(prev, sensor, bound, raw))
@@ -103,7 +115,7 @@ export default function EditDevice({ device, onUpdated, onClose }) {
           <input className="field-input" value={form.location} onChange={set('location')} />
 
           <label className="field-label">Source</label>
-          <select className="field-input" value={form.source} onChange={set('source')}>
+          <select className="field-input" value={form.source} onChange={setSource}>
             <option value="simulator">Simulator</option>
             <option value="hardware">Hardware (ESP32)</option>
           </select>
@@ -158,14 +170,19 @@ export default function EditDevice({ device, onUpdated, onClose }) {
           <label className="field-label">Run Hours Threshold</label>
           <input className="field-input" type="number" value={form.run_hours_threshold} onChange={set('run_hours_threshold')} />
 
-          <label className="field-label">
-            Sensors <span className="field-hint">(comma-separated)</span>
-          </label>
-          <input
-            className="field-input"
-            value={form.sensors}
-            onChange={set('sensors')}
-          />
+          <label className="field-label">Sensors</label>
+          <div className="sensor-checkbox-group">
+            {sensorOptionsFor(form.source).map(sensor => (
+              <label key={sensor} className="sensor-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.sensors.includes(sensor)}
+                  onChange={() => toggleSensor(sensor)}
+                />
+                {sensor}
+              </label>
+            ))}
+          </div>
 
           {sensorList.length > 0 && (
             <>

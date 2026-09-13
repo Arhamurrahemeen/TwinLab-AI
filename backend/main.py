@@ -154,6 +154,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/devices/discover", tags=["devices"])
+async def discover_devices():
+    """Device IDs seen on MQTT but not yet registered. Must be registered
+    before devices.router's GET /devices/{device_id} (same path shape)."""
+    db = get_db()
+    registered = {d["device_id"] async for d in db.devices.find({}, {"device_id": 1})}
+    return sorted(set(_last_known) - registered)
+
+
 app.include_router(devices.router,       prefix="/devices", tags=["devices"])
 app.include_router(readings.router,      prefix="/devices", tags=["readings"])
 app.include_router(alerts_router.router, prefix="/devices", tags=["alerts"])

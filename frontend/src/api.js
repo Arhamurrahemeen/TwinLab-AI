@@ -8,6 +8,13 @@ async function _get(path) {
 
 export const getDevices = () => _get('/devices')
 
+export const discoverDevices = () => _get('/devices/discover')
+
+export async function deleteDevice(deviceId) {
+  const res = await fetch(`${BASE}/devices/${deviceId}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`DELETE /devices/${deviceId} → ${res.status}`)
+}
+
 export const getReadings = (deviceId, sensor, limit = 50, rangeHours = 24) =>
   _get(`/devices/${deviceId}/readings?sensor=${sensor}&limit=${limit}&range_hours=${rangeHours}`)
 

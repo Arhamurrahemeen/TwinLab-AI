@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { updateThreshold, buildThresholds } from '../threshold-utils'
+import { sensorOptionsFor } from '../sensor-options'
+import { discoverDevices } from '../api'
 
 const BASE = '/api'
 
@@ -8,22 +10,35 @@ export default function RegisterDevice({ onCreated, onClose }) {
     device_id: '',
     name: '',
     location: '',
-    sensors: '',
+    sensors: [],
     source: 'simulator',
   })
   const [thresholds, setThresholds] = useState({})
   const [error, setError]   = useState('')
   const [saving, setSaving] = useState(false)
+  const [discovered, setDiscovered] = useState([])
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
 
-  const sensorList = useMemo(
-    () => form.sensors.split(',').map(s => s.trim()).filter(Boolean),
-    [form.sensors],
-  )
+  const sensorList = form.sensors
+
+  const toggleSensor = (sensor) =>
+    setForm(f => ({
+      ...f,
+      sensors: f.sensors.includes(sensor)
+        ? f.sensors.filter(s => s !== sensor)
+        : [...f.sensors, sensor],
+    }))
 
   const setThreshold = (sensor, bound, raw) =>
     setThresholds(prev => updateThreshold(prev, sensor, bound, raw))
+
+  useEffect(() => {
+    if (form.source !== 'hardware') { setDiscovered([]); return }
+    discoverDevices().then(setDiscovered).catch(() => setDiscovered([]))
+    const allowed = sensorOptionsFor('hardware')
+    setForm(f => ({ ...f, sensors: f.sensors.filter(s => allowed.includes(s)) }))
+  }, [form.source])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -75,6 +90,21 @@ export default function RegisterDevice({ onCreated, onClose }) {
             value={form.device_id}
             onChange={set('device_id')}
           />
+          {form.source === 'hardware' && discovered.length > 0 && (
+            <>
+              <label className="field-label">
+                Or pick a live unregistered device <span className="field-hint">(seen on MQTT)</span>
+              </label>
+              <select
+                className="field-input"
+                value=""
+                onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
+              >
+                <option value="" disabled>Select a discovered device…</option>
+                {discovered.map(id => <option key={id} value={id}>{id}</option>)}
+              </select>
+            </>
+          )}
 
           <label className="field-label">Name *</label>
           <input
@@ -98,15 +128,19 @@ export default function RegisterDevice({ onCreated, onClose }) {
             <option value="hardware">Hardware (ESP32)</option>
           </select>
 
-          <label className="field-label">
-            Sensors <span className="field-hint">(comma-separated)</span>
-          </label>
-          <input
-            className="field-input"
-            placeholder="temperature, humidity, fuel_level"
-            value={form.sensors}
-            onChange={set('sensors')}
-          />
+          <label className="field-label">Sensors</label>
+          <div className="sensor-checkbox-group">
+            {sensorOptionsFor(form.source).map(sensor => (
+              <label key={sensor} className="sensor-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.sensors.includes(sensor)}
+                  onChange={() => toggleSensor(sensor)}
+                />
+                {sensor}
+              </label>
+            ))}
+          </div>
 
           {sensorList.length > 0 && (
             <>

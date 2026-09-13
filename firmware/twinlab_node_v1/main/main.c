@@ -3,8 +3,12 @@
  * Reads the two sensors and publishes on the locked TwinLab MQTT contract
  * (CLAUDE.md §4):
  *
- *     twinlab/device/<DEVICE_ID>/sensor/<sensor>
+ *     twinlab/device/<device_id>/sensor/<sensor>
  *     { "value": 24.6, "unit": "C", "ts": <unix epoch ms> }
+ *
+ * device_id is derived from the chip's MAC at boot ("TL-<6 hex chars>"), not
+ * a compile-time constant — the same binary + secrets.h works unedited on
+ * any number of boards.
  *
  * Published sensors: temperature, humidity (every 5 s), accel_x/y/z, vibration
  * (every 1 s). Thresholds and alerting live in the backend, not here.
@@ -33,6 +37,7 @@
 #include "driver/i2c_master.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_netif_sntp.h"
 #include "esp_rom_sys.h"
@@ -62,10 +67,14 @@
 #define DHT_PUBLISH_MS   5000
 #define ACCEL_PUBLISH_MS 1000
 
+/* "TL-" + 6 hex chars, always exactly this long. */
+#define DEVICE_ID_MAXLEN 9
+
 static const char *TAG = "twinlab";
 
 static i2c_master_dev_handle_t mpu;
 static int mqtt_sock = -1;
+static char g_device_id[DEVICE_ID_MAXLEN + 1];
 
 static float g_temp = NAN, g_hum = NAN;  /* last good DHT reading; NAN until first */
 static float g_vib;                      /* EMA of accel AC magnitude, g */
@@ -321,7 +330,7 @@ static bool mqtt_connect_broker(void)
     /* CONNECT: var header (proto "MQTT", level 4, flags 0x02 clean-session,
        keepalive 0 → broker's inactivity timeout disabled) + payload (client id).
        A dropped connection is caught on the next publish and reconnected. */
-    const char cid[] = DEVICE_ID;
+    const char *cid = g_device_id;
     uint16_t cid_len = strlen(cid);
     uint8_t vh[] = { 0, 4, 'M', 'Q', 'T', 'T', 4, 0x02, 0, 0 };
     size_t rem = sizeof vh + 2 + cid_len;
@@ -392,7 +401,7 @@ static long long epoch_ms(void)
 static void pub_reading(const char *sensor, float value, const char *unit)
 {
     char topic[96];
-    snprintf(topic, sizeof topic, "twinlab/device/" DEVICE_ID "/sensor/%s", sensor);
+    snprintf(topic, sizeof topic, "twinlab/device/%s/sensor/%s", g_device_id, sensor);
 
     char payload[128];
     snprintf(payload, sizeof payload,
@@ -419,8 +428,8 @@ static void mqtt_selftest(void)
     assert(n > 0 && n < (int)sizeof buf);
     assert(strcmp(buf, "{\"value\":24.60,\"unit\":\"C\",\"ts\":1734000000000}") == 0);
 
-    assert(5 + strlen("twinlab/device/" DEVICE_ID "/sensor/temperature")
-             + sizeof buf < 192);   /* worst-case PUBLISH fits pkt[192] */
+    size_t worst_topic_len = strlen("twinlab/device/") + DEVICE_ID_MAXLEN + strlen("/sensor/temperature");
+    assert(5 + worst_topic_len + sizeof buf < 192);   /* worst-case PUBLISH fits pkt[192] */
 }
 
 /* ---- main -------------------------------------------------------------- */
@@ -434,6 +443,11 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         ESP_ERROR_CHECK(nvs_flash_init());
     }
+
+    uint8_t mac[6];
+    ESP_ERROR_CHECK(esp_efuse_mac_get_default(mac));
+    snprintf(g_device_id, sizeof g_device_id, "TL-%02X%02X%02X", mac[3], mac[4], mac[5]);
+    ESP_LOGI(TAG, "device id: %s", g_device_id);
 
     bool sda_up = line_pulled_up(SDA_IO);
     bool scl_up = line_pulled_up(SCL_IO);

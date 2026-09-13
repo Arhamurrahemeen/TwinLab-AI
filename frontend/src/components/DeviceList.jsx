@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getDevices, getAlerts } from '../api'
+import { getDevices, getAlerts, deleteDevice } from '../api'
 import RegisterDevice from './RegisterDevice'
 import EditDevice from './EditDevice'
 
@@ -70,6 +70,17 @@ export default function DeviceList({ selectedId, onSelect }) {
     if (updated.device_id === selectedId) onSelect(updated)
   }
 
+  const handleDelete = async (d) => {
+    if (!window.confirm(`Delete ${d.name}?`)) return
+    try {
+      await deleteDevice(d.device_id)
+      load()
+      if (d.device_id === selectedId) onSelect(null)
+    } catch {
+      setError('Could not delete device')
+    }
+  }
+
   return (
     <aside className="panel device-list">
       <div className="panel-title-row">
@@ -116,6 +127,13 @@ export default function DeviceList({ selectedId, onSelect }) {
                     onClick={(e) => { e.stopPropagation(); setEditDevice(d) }}
                   >
                     ✎
+                  </button>
+                  <button
+                    className="delete-btn"
+                    title="Delete device"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(d) }}
+                  >
+                    🗑
                   </button>
                 </div>
               </div>

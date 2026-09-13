@@ -504,6 +504,21 @@
 }
 .edit-btn:hover { background: #2E3542; color: #E8EDF2; }
 
+.delete-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: transparent;
+  color: #8A96A8;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.delete-btn:hover { background: rgba(214,88,88,0.2); color: #E88; }
+
 .add-btn {
   width: 22px;
   height: 22px;
@@ -934,6 +949,22 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-align: center;
+}
+
+.sensor-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 4px 2px;
+}
+
+.sensor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #C8D0DA;
+  cursor: pointer;
 }
 
 .threshold-row {
