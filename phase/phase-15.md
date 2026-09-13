@@ -72,10 +72,22 @@ All items shipped and verified end to end:
   Chrome extension wasn't connected — verified via `vite build` + reading the rendered JSX only.
 
 **Deferred / not done:**
-- `TL-02`'s registry entry is now orphaned (no board publishes under that ID anymore — the
-  only physical board is `TL-B49244`). Left as-is; Arham can delete `TL-02` and register
-  `TL-B49244` from the dashboard's new discover-dropdown whenever convenient.
-- No visual/manual browser test of the new dashboard UI (sensor checkboxes, discover
-  dropdown, delete button) — only confirmed via a production build and code reading.
 - Option C (full SoftAP/BLE provisioning) explicitly out of scope, per the brainstorming
   discussion — Option A was chosen as sufficient for now.
+
+**Follow-up verification, 2026-09-13 (browser, via Claude in Chrome):**
+- `TL-02` was already gone from the registry by this point — nothing to clean up; only
+  `NFL-SITE-GEN-01`, `NFL-FSD-CHILL-03`, `TL-B49244` exist, and `TL-B49244` is registered.
+- Sensor picker confirmed live: switching Source to Hardware in Register Device drops
+  `fuel_level`/`load_current` and leaves the 6 real sensors, exactly as scoped.
+- Discover-dropdown confirmed live end to end: published a throwaway MQTT reading for a
+  fake `TL-TEST99` device, `GET /devices/discover` picked it up, the modal's "OR PICK A
+  LIVE UNREGISTERED DEVICE" dropdown appeared (it's conditionally rendered only when
+  `discovered.length > 0` — correct, not a bug) and selecting it autofilled Device ID.
+  Closed the modal without submitting; `TL-TEST99` was never persisted (it only ever
+  lived in the backend's in-memory `_last_known` cache).
+- Delete button's presence confirmed via the accessibility tree (`"Delete device"`
+  button on each card); did not click it to avoid triggering the `window.confirm`
+  dialog Claude-in-Chrome can't dismiss.
+- Dashboard live data + alert feed also incidentally re-confirmed working (LIVE badge,
+  charts updating, alert list populated) while doing the above.
