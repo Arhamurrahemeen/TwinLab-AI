@@ -1,4 +1,0 @@
-Command: cmake -G Ninja -B D:\TwinLab_v2\firmware\twinlab_node_v1\main\build -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\Arham\.espressif\python_env\idf6.0_py3.13_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=True D:\TwinLab_v2\firmware\twinlab_node_v1\main
--- The C compiler identification is unknown
--- The CXX compiler identification is unknown
--- Configuring incomplete, errors occurred!

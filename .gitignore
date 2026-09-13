@@ -25,6 +25,7 @@ android/captures/
 
 # ESP-IDF build output + generated config
 firmware/twinlab_node_v1/build/
+firmware/twinlab_node_v1/main/build/
 firmware/twinlab_node_v1/sdkconfig
 firmware/twinlab_node_v1/sdkconfig.old
 
